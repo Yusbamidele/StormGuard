@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>StormGuard — Flood Safety App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sg-blue:#1a6bff;--sg-blue-dark:#0047d6;--sg-teal:#00c2a8;
+  --sg-danger:#ff4444;--sg-warn:#ff9500;--sg-ok:#28c76f;
+  --sg-bg:#0b0f1a;--sg-surface:#131928;--sg-surface2:#1c2438;
+  --sg-border:rgba(255,255,255,0.08);--sg-border2:rgba(255,255,255,0.13);
+  --sg-text:#f0f4ff;--sg-muted:#8b9abf;
+  --sg-font:'DM Sans',sans-serif;--sg-mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;background:#0d1220;display:flex;justify-content:center;align-items:flex-start;font-family:var(--sg-font)}
+.phone-shell{
+  width:100%;max-width:430px;min-height:100vh;background:var(--sg-bg);
+  position:relative;overflow:hidden;
+  box-shadow:0 0 80px rgba(0,0,0,0.8);
+}
+/* ── Screens ── */
+.screen{display:none;flex-direction:column;min-height:100vh;background:var(--sg-bg)}
+.screen.active{display:flex}
+.sg-scroll{flex:1;overflow-y:auto;padding-bottom:80px;-webkit-overflow-scrolling:touch}
+/* ── Bottom Nav ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;height:68px;
+  background:var(--sg-surface);border-top:1px solid var(--sg-border);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:0 8px 8px;z-index:200;
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 10px;border-radius:12px;background:none;border:none;flex:1;transition:background 0.15s}
+.nav-item:hover{background:rgba(255,255,255,0.04)}
+.nav-item .ni{font-size:18px;color:var(--sg-muted)}
+.nav-item .nl{font-size:9px;color:var(--sg-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.4px}
+.nav-item.active .ni,.nav-item.active .nl{color:var(--sg-blue)}
+.nav-item.sos-tab .ni{color:rgba(255,68,68,0.7)}
+/* ── Topbar ── */
+.topbar{padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--sg-border);background:var(--sg-surface);flex-shrink:0}
+.stitle{font-size:17px;font-weight:700;color:var(--sg-text);flex:1;text-align:center}
+.back-btn{width:36px;height:36px;border-radius:10px;background:var(--sg-surface2);border:none;cursor:pointer;color:var(--sg-text);font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--sg-surface2);border:1px solid var(--sg-border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--sg-text);position:relative}
+.notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--sg-danger);border:1px solid var(--sg-surface2)}
+/* ── Section title ── */
+.sec{font-size:11px;font-weight:600;color:var(--sg-muted);letter-spacing:0.8px;text-transform:uppercase;padding:16px 16px 8px}
+/* ── Buttons ── */
+.btn-p{background:linear-gradient(135deg,var(--sg-blue),var(--sg-blue-dark));color:#fff;border:none;border-radius:14px;padding:14px 0;width:100%;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--sg-font);transition:opacity 0.15s}
+.btn-p:hover{opacity:0.88}
+.btn-s{background:rgba(255,255,255,0.06);color:var(--sg-text);border:1px solid var(--sg-border);border-radius:14px;padding:14px 0;width:100%;font-size:16px;font-weight:500;cursor:pointer;font-family:var(--sg-font);transition:background 0.15s}
+.btn-s:hover{background:rgba(255,255,255,0.1)}
+/* ── Inputs ── */
+.inp,.sel,.ta{width:100%;background:var(--sg-surface2);border:1px solid var(--sg-border);border-radius:12px;padding:13px 16px;color:var(--sg-text);font-size:15px;font-family:var(--sg-font);margin-bottom:12px;outline:none}
+.inp::placeholder,.ta::placeholder{color:var(--sg-muted)}
+.inp:focus,.sel:focus,.ta:focus{border-color:rgba(26,107,255,0.5)}
+.ta{resize:none;min-height:90px}
+.sel{appearance:none}
+.flabel{display:block;font-size:13px;color:var(--sg-muted);margin-bottom:6px;font-weight:500}
+/* ── Badges ── */
+.badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px}
+.bd{background:rgba(255,68,68,0.15);color:#ff6b6b}
+.bw{background:rgba(255,149,0,0.15);color:#ffaa30}
+.bc{background:rgba(255,214,10,0.15);color:#ffd60a}
+.bo{background:rgba(40,199,111,0.15);color:#4cd68a}
+.bb{background:rgba(26,107,255,0.15);color:#5b9bff}
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.stat-card{background:var(--sg-surface);border-radius:14px;border:1px solid var(--sg-border);padding:14px}
+.stat-lbl{font-size:11px;color:var(--sg-muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.stat-val{font-size:24px;font-weight:700}
+.stat-val.cd{color:var(--sg-danger)}.stat-val.cw{color:var(--sg-warn)}.stat-val.co{color:var(--sg-ok)}.stat-val.cb{color:var(--sg-blue)}
+.stat-sub{font-size:11px;color:var(--sg-muted);margin-top:4px}
+/* ── Toggle ── */
+.toggle{width:38px;height:22px;border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;transition:background 0.2s;display:inline-block}
+.toggle.on{background:var(--sg-blue)}.toggle.off{background:var(--sg-surface2);border:1px solid var(--sg-border2)}
+.toggle::after{content:'';position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s}
+.toggle.on::after{left:19px}.toggle.off::after{left:3px}
+
+/* ════════ SPLASH ════════ */
+#screen-splash{background:linear-gradient(160deg,#0b1228 0%,#0d1f3e 50%,#081428 100%);align-items:center;justify-content:center;padding:40px 32px;gap:0}
+.sp-logo{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--sg-blue),var(--sg-teal));display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px}
+.sp-title{font-size:32px;font-weight:700;color:#fff;letter-spacing:-0.5px;margin-bottom:8px}
+.sp-title span{color:var(--sg-teal)}
+.sp-tag{color:var(--sg-muted);font-size:14px;text-align:center;line-height:1.5;margin-bottom:28px}
+.sp-feats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:32px}
+.sp-feat{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sg-muted)}
+.feat-dot{width:6px;height:6px;border-radius:50%;background:var(--sg-teal);flex-shrink:0}
+
+/* ════════ ONBOARDING ════════ */
+.onb-hdr{padding:20px 24px 0;display:flex;align-items:center;gap:12px}
+.step-ind{display:flex;gap:6px;flex:1;justify-content:center}
+.sdot{width:28px;height:4px;border-radius:2px;background:var(--sg-surface2)}
+.sdot.active{background:var(--sg-blue)}.sdot.done{background:var(--sg-teal)}
+.onb-body{padding:24px;flex:1;overflow-y:auto}
+.onb-body h2{font-size:22px;font-weight:700;color:var(--sg-text);margin-bottom:6px}
+.onb-sub{font-size:14px;color:var(--sg-muted);margin-bottom:24px}
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.prof-card{background:var(--sg-surface2);border-radius:14px;border:2px solid transparent;padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:8px}
+.prof-card.sel{border-color:var(--sg-blue);background:rgba(26,107,255,0.12)}
+.pc-ico{font-size:28px}.pc-lbl{font-size:13px;color:var(--sg-text);font-weight:500}
+.onb-foot{padding:16px 24px 32px}
+
+/* ════════ HOME ════════ */
+.topbar-home{justify-content:space-between}
+.tb-brand{display:flex;align-items:center;gap:8px}
+.tb-logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1a6bff,#00c2a8);display:flex;align-items:center;justify-content:center;font-size:14px}
+.tb-name{font-size:16px;font-weight:700;color:var(--sg-text)}
+.tb-actions{display:flex;gap:8px}
+.alert-banner{margin:12px 16px;background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.3);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.at-t{font-size:13px;font-weight:600;color:#ff6b6b}
+.at-s{font-size:12px;color:var(--sg-muted);margin-top:2px}
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 16px;margin-bottom:4px}
+.qa-btn{background:var(--sg-surface);border-radius:14px;border:1px solid var(--sg-border);padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:background 0.15s}
+.qa-btn:hover{background:var(--sg-surface2)}
+.qa-sos{border-color:rgba(255,68,68,0.35);background:rgba(255,68,68,0.07)}
+.qa-ico{font-size:20px}.qa-lbl{font-size:10px;color:var(--sg-muted);font-weight:500;text-align:center;line-height:1.2}
+.qa-sos .qa-lbl{color:#ff6b6b}
+.zones-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.zone-row{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.zdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.zcrit{background:var(--sg-danger);box-shadow:0 0 8px rgba(255,68,68,0.5)}
+.zhigh{background:var(--sg-warn);box-shadow:0 0 8px rgba(255,149,0,0.5)}
+.zcaut{background:#ffd60a}.zsafe{background:var(--sg-ok);box-shadow:0 0 8px rgba(40,199,111,0.4)}
+.z-info{flex:1}.z-name{font-size:14px;font-weight:500;color:var(--sg-text)}.z-dep{font-size:12px;color:var(--sg-muted);margin-top:2px}
+.feed{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.feed-item{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:12px;display:flex;gap:10px}
+.f-av{width:34px;height:34px;border-radius:10px;background:rgba(26,107,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.f-u{font-size:13px;font-weight:600;color:var(--sg-text)}.f-m{font-size:12px;color:var(--sg-muted);margin-top:3px;line-height:1.4}.f-t{font-size:11px;color:rgba(139,154,191,0.6);margin-top:4px}
+
+/* ════════ WEATHER ════════ */
+.w-hero{background:linear-gradient(160deg,#0d1b3e,#0a2440);padding:20px;flex-shrink:0;position:relative;overflow:hidden}
+.rain-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.rdrop{position:absolute;width:1px;background:linear-gradient(transparent,rgba(100,160,255,0.45));animation:rain-fall linear infinite;border-radius:1px}
+@keyframes rain-fall{0%{transform:translateY(-20px);opacity:0}10%{opacity:1}90%{opacity:0.3}100%{transform:translateY(300px);opacity:0}}
+.w-loc{font-size:13px;color:var(--sg-muted);margin-bottom:4px;position:relative}
+.w-main{display:flex;align-items:center;justify-content:space-between;position:relative}
+.w-temp{font-size:56px;font-weight:700;color:#fff;line-height:1;font-family:var(--sg-mono)}
+.w-ico{font-size:52px}.w-desc{font-size:15px;color:#9bb8e8;margin-top:4px}
+.w-meta{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;position:relative}
+.wmeta{font-size:12px;color:var(--sg-muted)}
+.frisk{margin-top:14px;background:rgba(255,255,255,0.06);border-radius:10px;padding:12px;position:relative}
+.fr-lbl{font-size:12px;color:var(--sg-muted);margin-bottom:8px;font-weight:500}
+.fr-bar-bg{height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.fr-bar{height:100%;border-radius:4px;width:72%;background:linear-gradient(90deg,#28c76f,#ff9500,#ff4444)}
+.fr-val{font-size:12px;color:#ffaa30;font-weight:600}
+.h-scroll{display:flex;gap:8px;padding:8px 16px;overflow-x:auto;scrollbar-width:none}
+.h-scroll::-webkit-scrollbar{display:none}
+.h-card{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:10px 12px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:62px;flex-shrink:0}
+.h-card.now{border-color:rgba(26,107,255,0.5);background:rgba(26,107,255,0.12)}
+.h-time{font-size:11px;color:var(--sg-muted);font-weight:500}.h-ico{font-size:18px}.h-tmp{font-size:13px;font-weight:600;color:var(--sg-text)}.h-rain{font-size:10px;color:#5b9bff}
+.fc-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.fc-row{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:11px 14px;display:flex;align-items:center;gap:10px}
+.fc-day{font-size:13px;font-weight:500;color:var(--sg-text);width:40px;flex-shrink:0}
+.fc-ico{font-size:18px;flex-shrink:0}.fc-desc{flex:1;font-size:12px;color:var(--sg-muted)}
+.fc-rain{font-size:12px;color:#5b9bff;width:32px;text-align:right;flex-shrink:0}
+.fc-tmp{font-size:13px;font-weight:600;color:var(--sg-text);width:48px;text-align:right;flex-shrink:0}
+
+/* ════════ NAVIGATION ════════ */
+.nav-dest{display:flex;gap:8px;padding:12px 16px;background:var(--sg-surface);border-bottom:1px solid var(--sg-border);flex-shrink:0}
+.dest-in{flex:1;background:var(--sg-surface2);border:1px solid var(--sg-border);border-radius:10px;padding:9px 12px;color:var(--sg-text);font-size:14px;font-family:var(--sg-font);outline:none}
+.go-btn{background:var(--sg-blue);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:600;font-size:14px;cursor:pointer;font-family:var(--sg-font);flex-shrink:0}
+.route-sel{display:flex;flex-direction:column;gap:6px;padding:10px 16px;background:var(--sg-surface);border-bottom:1px solid var(--sg-border);flex-shrink:0}
+.r-opt{background:var(--sg-surface2);border:1px solid var(--sg-border);border-radius:10px;padding:10px 12px;text-align:left;cursor:pointer;font-family:var(--sg-font);transition:border-color 0.15s;width:100%}
+.r-opt.active{border-color:rgba(26,107,255,0.5);background:rgba(26,107,255,0.08)}
+.r-name{font-size:13px;font-weight:600;color:var(--sg-text);margin-bottom:4px}
+.r-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sg-muted)}
+.nav-map{position:relative;flex-shrink:0;background:#0d1b2e}
+.nav-svg{display:block;width:100%;height:auto}
+.map-fwarn{position:absolute;bottom:8px;left:12px;right:12px;background:rgba(255,68,68,0.15);border:1px solid rgba(255,68,68,0.35);border-radius:10px;padding:8px 12px;font-size:12px;color:#ff6b6b;font-weight:600}
+.nav-panel{background:var(--sg-surface);border-top:1px solid var(--sg-border);padding:14px 16px;overflow-y:auto}
+.nav-sumrow{display:flex;justify-content:space-around;margin-bottom:12px}
+.ns-stat{text-align:center}
+.ns-v{font-size:20px;font-weight:700;color:var(--sg-text)}
+.ns-v.co{color:var(--sg-ok)}.ns-v.cw{color:var(--sg-warn)}.ns-v.cd{color:var(--sg-danger)}
+.ns-l{font-size:11px;color:var(--sg-muted);margin-top:2px}
+.steps-list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+.step-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--sg-surface2)}
+.step-row.active-s{background:rgba(26,107,255,0.15);border:1px solid rgba(26,107,255,0.3)}
+.sr-ico{font-size:14px;flex-shrink:0;width:20px;text-align:center}
+.sr-txt{flex:1;font-size:13px;color:var(--sg-text)}
+.sr-dist{font-size:12px;color:var(--sg-muted);flex-shrink:0}
+/* Active nav */
+.nav-active-wrap{display:flex;flex-direction:column;height:100vh}
+.nav-map-big{flex:1;position:relative;background:#0d1b2e;overflow:hidden}
+.nav-inst{position:absolute;top:10px;left:12px;right:12px;background:rgba(11,15,26,0.92);border:1px solid var(--sg-border);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.ni-ico{font-size:22px;flex-shrink:0}.ni-txt{font-size:14px;font-weight:600;color:var(--sg-text)}.ni-dist{font-size:12px;color:var(--sg-muted);margin-top:2px}
+.nav-fw{position:absolute;bottom:10px;left:12px;right:12px;background:rgba(255,68,68,0.15);border:1px solid rgba(255,68,68,0.35);border-radius:10px;padding:8px 12px;font-size:12px;color:#ff6b6b;font-weight:600}
+.nav-ap{background:var(--sg-surface);border-top:1px solid var(--sg-border);padding:14px 16px 24px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
+.nav-abtn-row{display:flex;gap:8px}
+
+/* ════════ SOS ════════ */
+#screen-sos{position:relative}
+.sos-ov{position:absolute;inset:0;background:rgba(180,0,0,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:500;padding:32px}
+.sos-ov.show{display:flex}
+.sos-flash{font-size:48px;animation:sos-fl 0.8s infinite}
+@keyframes sos-fl{0%,100%{opacity:1}50%{opacity:0.35}}
+.sos-cnt{font-size:72px;font-weight:700;color:#fff;font-family:var(--sg-mono);line-height:1}
+.sos-ov-t{font-size:22px;font-weight:700;color:#fff;text-align:center}
+.sos-ov-s{font-size:14px;color:rgba(255,255,255,0.75);text-align:center;line-height:1.5}
+.sos-hero{display:flex;flex-direction:column;align-items:center;padding:28px 24px 20px;gap:16px}
+.sos-ring{width:176px;height:176px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex-shrink:0}
+.sr-bg{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(255,68,68,0.2)}
+.sr-p1{position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(255,68,68,0.15);animation:sos-exp 2s infinite}
+.sr-p2{position:absolute;inset:-18px;border-radius:50%;border:1.5px solid rgba(255,68,68,0.08);animation:sos-exp 2s 0.5s infinite}
+@keyframes sos-exp{0%{opacity:1;transform:scale(0.95)}100%{opacity:0;transform:scale(1.1)}}
+.sos-inner{width:148px;height:148px;border-radius:50%;background:linear-gradient(135deg,#cc0000,#ff2222);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 0 36px rgba(255,68,68,0.4);transition:transform 0.1s}
+.sos-inner:active{transform:scale(0.96)}
+.sos-lbl{font-size:28px;font-weight:700;color:#fff;letter-spacing:3px}
+.sos-sub{font-size:11px;color:rgba(255,255,255,0.7);font-weight:500}
+.sos-desc{font-size:14px;color:var(--sg-muted);text-align:center;max-width:260px;line-height:1.55}
+.sos-ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 4px}
+.sos-ic{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:12px;display:flex;gap:10px;align-items:flex-start}
+.si-ico{font-size:18px;flex-shrink:0}
+.si-lbl{font-size:11px;color:var(--sg-muted);margin-bottom:3px}
+.si-val{font-size:13px;font-weight:600;color:var(--sg-text)}
+.si-val.co{color:var(--sg-ok)}.si-val.cw{color:var(--sg-warn)}
+.ec-list{padding:0 16px 90px;display:flex;flex-direction:column;gap:8px}
+.ec-row{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.ec-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ec-ico.red{background:rgba(255,68,68,0.15)}.ec-ico.blue{background:rgba(26,107,255,0.15)}.ec-ico.org{background:rgba(255,149,0,0.15)}
+.ec-name{font-size:14px;font-weight:600;color:var(--sg-text)}.ec-num{font-size:12px;color:var(--sg-muted);margin-top:2px}
+.ec-info{flex:1}
+.ec-call{margin-left:auto;background:rgba(40,199,111,0.15);color:#4cd68a;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sg-font)}
+
+/* ════════ MAP ════════ */
+.map-wrap{position:relative;flex:1;background:#0d1b2e;display:flex;flex-direction:column}
+.map-svg{flex:1;width:100%}
+.map-legend{position:absolute;bottom:80px;left:12px;background:rgba(11,15,26,0.88);border:1px solid var(--sg-border);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+.leg-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sg-muted)}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.live-chip{position:absolute;top:10px;right:12px;background:rgba(11,15,26,0.88);border:1px solid var(--sg-border);border-radius:10px;padding:7px 11px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sg-text)}
+.pdot{width:8px;height:8px;border-radius:50%;background:var(--sg-ok);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.3)}}
+
+/* ════════ ALERTS ════════ */
+.af-bar{padding:10px 16px;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;background:var(--sg-surface);border-bottom:1px solid var(--sg-border);flex-shrink:0}
+.af-bar::-webkit-scrollbar{display:none}
+.fp{padding:6px 14px;border-radius:20px;border:1px solid var(--sg-border);background:var(--sg-surface2);color:var(--sg-muted);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:var(--sg-font);transition:all 0.15s;flex-shrink:0}
+.fp.active{background:var(--sg-blue);color:#fff;border-color:var(--sg-blue)}
+.a-card{background:var(--sg-surface);border-radius:14px;border:1px solid var(--sg-border);overflow:hidden;margin:8px 16px 0}
+.a-hdr{padding:14px;display:flex;gap:12px;align-items:flex-start}
+.a-sev{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.as-crit{background:rgba(255,68,68,0.15)}.as-high{background:rgba(255,149,0,0.15)}.as-caut{background:rgba(255,214,10,0.15)}.as-safe{background:rgba(40,199,111,0.15)}
+.a-t{font-size:14px;font-weight:600;color:var(--sg-text)}.a-l{font-size:12px;color:var(--sg-muted);margin-top:2px}.a-ti{font-size:11px;color:rgba(139,154,191,0.6);margin-top:4px}
+.a-body{padding:0 14px 14px}
+.dep-lbl{font-size:12px;color:var(--sg-muted);margin-bottom:6px}
+.dep-bg{height:6px;background:var(--sg-surface2);border-radius:3px;overflow:hidden}
+.dep-fill{height:100%;border-radius:3px}
+.a-msg{font-size:12px;font-weight:600;margin-top:8px}
+.mc{color:#ff6b6b}.mh{color:#ffaa30}.mca{color:#ffd60a}.ms{color:#4cd68a}
+
+/* ════════ VEHICLE ════════ */
+.veh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 4px}
+.veh-card{background:var(--sg-surface);border-radius:14px;border:2px solid transparent;padding:14px 12px;text-align:center;cursor:pointer;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.veh-card.sel{border-color:var(--sg-blue);background:rgba(26,107,255,0.1)}
+.vi{font-size:26px}.vn{font-size:13px;color:var(--sg-text);font-weight:500}.vl{font-size:11px;color:var(--sg-teal)}
+.gauge-card{background:var(--sg-surface);border-radius:16px;border:1px solid var(--sg-border);padding:16px;margin:0 16px 8px}
+.gauge-t{font-size:14px;font-weight:600;color:var(--sg-text);margin-bottom:12px}
+.gauge-bg{height:10px;background:var(--sg-surface2);border-radius:5px;overflow:hidden;margin-bottom:8px}
+.gauge-fill{height:100%;border-radius:5px;transition:width 0.4s}
+.gauge-lbls{display:flex;justify-content:space-between;font-size:11px;color:var(--sg-muted)}
+.gauge-verd{font-size:12px;font-weight:600;margin-top:8px}
+.r-card{background:var(--sg-surface);border-radius:14px;border:1px solid var(--sg-border);padding:14px;margin:0 16px 8px;cursor:pointer;transition:background 0.15s}
+.r-card:hover{background:var(--sg-surface2)}
+.r-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.r-card-name{font-size:14px;font-weight:600;color:var(--sg-text)}
+.r-card-det{font-size:12px;color:var(--sg-muted)}
+
+/* ════════ PROFILE ════════ */
+.p-hero{padding:24px;display:flex;flex-direction:column;align-items:center;background:var(--sg-surface);border-bottom:1px solid var(--sg-border);flex-shrink:0}
+.p-av{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--sg-blue),var(--sg-teal));display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px}
+.p-name{font-size:18px;font-weight:700;color:var(--sg-text)}.p-sub{font-size:13px;color:var(--sg-muted);margin-top:4px}
+.p-badges{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.pbg{font-size:11px;padding:4px 10px;border-radius:8px;font-weight:600;background:rgba(26,107,255,0.15);color:#5b9bff}
+.pbg.ok{background:rgba(40,199,111,0.12);color:#4cd68a}
+.set-sec{padding:0 16px}
+.set-row{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--sg-border);cursor:pointer}
+.set-row:last-child{border-bottom:none}
+.sr-i{font-size:18px;margin-right:12px;width:24px;text-align:center}
+.sr-l{flex:1;font-size:14px;color:var(--sg-text)}
+.sr-ld{color:var(--sg-danger)}
+.sr-v{font-size:13px;color:var(--sg-muted)}.sr-a{font-size:14px;color:var(--sg-muted);margin-left:4px}
+
+/* ════════ REPORT ════════ */
+.photo-ph{background:var(--sg-surface2);border:2px dashed rgba(26,107,255,0.3);border-radius:14px;height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:var(--sg-muted);font-size:13px;margin-bottom:16px}
+
+/* ════════ AUTH ════════ */
+.auth-screen{background:linear-gradient(170deg,#0b1228 0%,#0d1f3e 55%,#0b0f1a 100%);align-items:center;justify-content:flex-start;padding:0;overflow-y:auto}
+.auth-top{width:100%;padding:48px 32px 0;display:flex;flex-direction:column;align-items:center}
+.auth-logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--sg-blue),var(--sg-teal));display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px}
+.auth-title{font-size:26px;font-weight:700;color:#fff;margin-bottom:4px}
+.auth-title span{color:var(--sg-teal)}
+.auth-sub{font-size:14px;color:var(--sg-muted);text-align:center;margin-bottom:32px}
+.auth-card{width:100%;padding:28px 24px 32px;background:var(--sg-surface);border-top:1px solid var(--sg-border);border-radius:24px 24px 0 0;flex:1;margin-top:auto}
+.auth-tabs{display:flex;gap:0;background:var(--sg-surface2);border-radius:12px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:9px 0;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sg-font);transition:all 0.2s;background:none;color:var(--sg-muted)}
+.auth-tab.active{background:var(--sg-blue);color:#fff}
+.inp-wrap{position:relative;margin-bottom:12px}
+.inp-wrap .inp{margin-bottom:0;padding-right:44px}
+.inp-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--sg-muted);padding:0}
+.inp-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.inp-wrap .inp{padding-left:42px}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0}
+.auth-divider span{font-size:12px;color:var(--sg-muted);white-space:nowrap}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--sg-border)}
+.social-btns{display:flex;gap:10px;margin-bottom:20px}
+.social-btn{flex:1;background:var(--sg-surface2);border:1px solid var(--sg-border);border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sg-text);font-family:var(--sg-font);transition:background 0.15s}
+.social-btn:hover{background:rgba(255,255,255,0.08)}
+.auth-foot{text-align:center;font-size:13px;color:var(--sg-muted);margin-top:16px}
+.auth-foot a{color:var(--sg-blue);cursor:pointer;text-decoration:none;font-weight:600}
+.auth-error{background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#ff6b6b;margin-bottom:14px;display:none}
+.auth-success{background:rgba(40,199,111,0.1);border:1px solid rgba(40,199,111,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:#4cd68a;margin-bottom:14px;display:none}
+.pwd-strength{height:4px;border-radius:2px;margin:-8px 0 12px;transition:all 0.3s;overflow:hidden;background:var(--sg-surface2)}
+.pwd-bar{height:100%;border-radius:2px;transition:all 0.3s;width:0}
+.pwd-hint{font-size:11px;color:var(--sg-muted);margin:-4px 0 12px}
+.forgot-link{display:block;text-align:right;font-size:13px;color:var(--sg-blue);cursor:pointer;margin:-4px 0 16px;font-weight:500}
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;cursor:pointer}
+.terms-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--sg-border2);background:var(--sg-surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all 0.15s;font-size:11px;color:transparent}
+.terms-check.checked{background:var(--sg-blue);border-color:var(--sg-blue);color:#fff}
+.terms-txt{font-size:12px;color:var(--sg-muted);line-height:1.5}
+.terms-txt a{color:var(--sg-blue);cursor:pointer}
+/* Forgot password screen */
+.forgot-screen{background:var(--sg-bg);padding:32px 24px}
+.forgot-screen h2{font-size:22px;font-weight:700;color:var(--sg-text);margin-bottom:8px}
+.forgot-screen p{font-size:14px;color:var(--sg-muted);margin-bottom:28px;line-height:1.5}
+/* Loading spinner on btn */
+.btn-p.loading{opacity:0.7;pointer-events:none;position:relative}
+.btn-p.loading::after{content:'';position:absolute;right:18px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
+/* Profile avatar ring when logged in */
+.avatar-ring{width:76px;height:76px;border-radius:22px;background:linear-gradient(135deg,var(--sg-blue),var(--sg-teal));display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:12px;box-shadow:0 0 0 3px rgba(26,107,255,0.3)}
+
+/* ════════ POST-SIGNUP FLOW ════════ */
+.setup-screen{background:var(--sg-bg);flex-direction:column;overflow:hidden}
+.setup-hero{padding:32px 24px 20px;text-align:center;flex-shrink:0}
+.setup-step-bar{display:flex;gap:6px;justify-content:center;margin-bottom:20px}
+.setup-step-dot{height:4px;border-radius:2px;background:var(--sg-surface2);transition:all 0.3s}
+.setup-step-dot.done{background:var(--sg-teal)}.setup-step-dot.active{background:var(--sg-blue);width:28px!important}
+.setup-ico{font-size:48px;margin-bottom:12px}
+.setup-title{font-size:22px;font-weight:700;color:var(--sg-text);margin-bottom:6px}
+.setup-sub{font-size:14px;color:var(--sg-muted);line-height:1.5}
+.setup-scroll{flex:1;overflow-y:auto;padding:8px 20px 90px}
+.setup-footer{position:absolute;bottom:0;left:0;right:0;padding:16px 20px 28px;background:linear-gradient(to top,var(--sg-bg) 70%,transparent);z-index:10}
+/* Usage type cards */
+.usage-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px}
+.usage-card{background:var(--sg-surface);border-radius:16px;border:2px solid transparent;padding:16px 8px 14px;text-align:center;cursor:pointer;transition:all 0.18s;display:flex;flex-direction:column;align-items:center;gap:7px}
+.usage-card:hover{background:var(--sg-surface2)}
+.usage-card.sel{border-color:var(--sg-blue);background:rgba(26,107,255,0.1)}
+.usage-card .uc-ico{font-size:32px}
+.usage-card .uc-name{font-size:12px;font-weight:600;color:var(--sg-text)}
+.usage-card .uc-desc{font-size:10px;color:var(--sg-muted);line-height:1.3}
+/* Profile detail settings */
+.detail-section{margin-bottom:20px}
+.detail-sec-title{font-size:11px;font-weight:600;color:var(--sg-muted);letter-spacing:0.7px;text-transform:uppercase;margin-bottom:10px}
+.detail-row{background:var(--sg-surface);border-radius:12px;border:1px solid var(--sg-border);padding:14px 16px;margin-bottom:8px}
+.detail-row-lbl{font-size:12px;color:var(--sg-muted);margin-bottom:8px;font-weight:500}
+.detail-row-val{font-size:18px;font-weight:700;color:var(--sg-text);margin-bottom:10px}
+.range-wrap{position:relative}
+.sg-range{width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;-webkit-appearance:none;background:linear-gradient(to right,var(--sg-blue) 0%,var(--sg-blue) 50%,var(--sg-surface2) 50%)}
+.sg-range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--sg-blue);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.range-marks{display:flex;justify-content:space-between;font-size:10px;color:var(--sg-muted);margin-top:5px}
+/* Vehicle model picker */
+.vmodel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vmodel-card{background:var(--sg-surface);border-radius:12px;border:2px solid transparent;padding:12px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:10px}
+.vmodel-card.sel{border-color:var(--sg-blue);background:rgba(26,107,255,0.1)}
+.vmodel-ico{font-size:22px;flex-shrink:0}
+.vmodel-info .vmi-name{font-size:13px;font-weight:600;color:var(--sg-text)}
+.vmodel-info .vmi-lim{font-size:11px;color:var(--sg-teal);margin-top:2px}
+/* Summary card */
+.profile-summary{background:var(--sg-surface);border-radius:16px;border:1px solid var(--sg-border);padding:18px;margin-bottom:12px}
+.ps-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--sg-border)}
+.ps-row:last-child{border-bottom:none}
+.ps-ico{font-size:18px;flex-shrink:0;width:26px;text-align:center}
+.ps-lbl{font-size:12px;color:var(--sg-muted)}.ps-val{font-size:14px;font-weight:600;color:var(--sg-text);margin-top:2px}
+
+/* Mode tabs */
+
+/* Vehicle list items */
+.vlist-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.15s;border:2px solid transparent}
+.vlist-item:hover{background:var(--sg-surface2)}
+.vlist-item.sel{background:rgba(26,107,255,0.12);border-color:rgba(26,107,255,0.5)}
+.vlist-ico{font-size:22px;flex-shrink:0;width:28px;text-align:center}
+.vlist-name{font-size:13px;font-weight:600;color:var(--sg-text);flex:1}
+.vlist-limit{font-size:11px;color:var(--sg-teal);flex-shrink:0}
+/* Mobility rows */
+.mobility-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--sg-surface);border-radius:12px;border:2px solid transparent;cursor:pointer;transition:all 0.15s}
+.mobility-row:hover{background:var(--sg-surface2)}
+.mobility-row.sel{border-color:var(--sg-blue);background:rgba(26,107,255,0.1)}
+.mob-name{font-size:13px;font-weight:600;color:var(--sg-text)}
+.mob-sub{font-size:11px;color:var(--sg-muted);margin-top:2px}
+
+/* ── Mode tabs ── */
+.mode-tabs{display:flex;gap:0;background:var(--sg-surface2);border-radius:12px;padding:4px;margin-bottom:16px}
+.mode-tab{flex:1;padding:10px 4px;border:none;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sg-font);transition:all 0.2s;background:none;color:var(--sg-muted);white-space:nowrap}
+.mode-tab.active{background:var(--sg-blue);color:#fff}
+.mode-panel{display:none}
+.mode-panel.open{display:block}
+
+/* ── Search-select widget ── */
+.search-select-wrap{position:static;margin-bottom:4px}
+.ss-input-row{display:flex;gap:8px;align-items:stretch}
+.ss-display{flex:1;background:var(--sg-surface2);border:1.5px solid var(--sg-border2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color 0.15s;min-height:50px}
+.ss-display:hover{border-color:rgba(26,107,255,0.4)}
+.ss-ico{font-size:20px;flex-shrink:0}
+.ss-val{flex:1;font-size:15px;font-weight:600;color:var(--sg-text)}
+.ss-arrow{font-size:11px;color:var(--sg-muted);transition:transform 0.2s}
+.ss-display.open .ss-arrow{transform:rotate(180deg)}
+.ss-search-btn{width:50px;background:var(--sg-blue);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;transition:opacity 0.15s}
+.ss-search-btn:hover{opacity:0.85}
+.ss-dropdown{position:relative;background:var(--sg-surface);border:1.5px solid var(--sg-border2);border-radius:12px;overflow:hidden;margin-top:6px;z-index:50}
+.ss-search-wrap{padding:10px 12px 8px;border-bottom:1px solid var(--sg-border)}
+.ss-search{width:100%;background:var(--sg-surface2);border:1px solid var(--sg-border);border-radius:8px;padding:8px 12px;color:var(--sg-text);font-size:14px;font-family:var(--sg-font);outline:none}
+.ss-search::placeholder{color:var(--sg-muted)}
+.ss-options{max-height:220px;overflow-y:auto}
+.ss-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;transition:background 0.12s;border-bottom:1px solid var(--sg-border)}
+.ss-opt:last-child{border-bottom:none}
+.ss-opt:hover{background:var(--sg-surface2)}
+.ss-opt.sel{background:rgba(26,107,255,0.1)}
+.sso-ico{font-size:22px;flex-shrink:0;width:28px;text-align:center}
+.sso-name{font-size:13px;font-weight:600;color:var(--sg-text)}
+.sso-sub{font-size:11px;color:var(--sg-muted);margin-top:2px}
+.ss-opt.hidden{display:none}
+
+/* ── Alert calc box ── */
+.alert-calc-box{background:rgba(255,149,0,0.08);border:1px solid rgba(255,149,0,0.25);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--sg-muted);line-height:1.5;margin-top:8px}
+
+/* ════ MODE TABS ════ */
+.mode-tabs{display:flex;gap:0;background:var(--sg-surface2);border-radius:14px;padding:4px;margin-bottom:16px}
+.mode-tab{flex:1;padding:10px 4px 9px;border:none;border-radius:10px;background:none;color:var(--sg-muted);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sg-font);transition:all 0.2s;white-space:nowrap;text-align:center;line-height:1.2}
+.mode-tab.active{background:var(--sg-blue);color:#fff;box-shadow:0 2px 8px rgba(26,107,255,0.3)}
+.mode-panel{display:none}
+
+/* ════ SEARCHABLE SELECT ════ */
+.search-select-wrap{position:relative;margin-bottom:4px}
+.ss-input-row{display:flex;gap:8px;align-items:stretch}
+.ss-display{
+  flex:1;display:flex;align-items:center;gap:10px;
+  background:var(--sg-surface2);border:1px solid var(--sg-border2);
+  border-radius:12px;padding:12px 14px;cursor:pointer;
+  transition:border-color 0.15s;min-width:0;
+}
+.ss-display:hover{border-color:rgba(26,107,255,0.4)}
+.ss-ico{font-size:20px;flex-shrink:0}
+.ss-val{flex:1;font-size:14px;font-weight:500;color:var(--sg-text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-arrow{font-size:11px;color:var(--sg-muted);flex-shrink:0;transition:transform 0.2s}
+.ss-arrow.open{transform:rotate(180deg)}
+.ss-search-btn{
+  width:48px;flex-shrink:0;background:var(--sg-blue);border:none;
+  border-radius:12px;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity 0.15s;
+}
+.ss-search-btn:hover{opacity:0.85}
+.ss-dropdown{
+  position:relative;
+  background:var(--sg-surface);border:1px solid var(--sg-border2);
+  border-radius:14px;z-index:50;overflow:hidden;
+  margin-top:6px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.35);
+}
+.ss-search-wrap{padding:10px 10px 6px}
+.ss-search{
+  width:100%;background:var(--sg-surface2);border:1px solid var(--sg-border);
+  border-radius:9px;padding:9px 12px;color:var(--sg-text);
+  font-size:14px;font-family:var(--sg-font);outline:none;
+}
+.ss-search::placeholder{color:var(--sg-muted)}
+.ss-search:focus{border-color:rgba(26,107,255,0.5)}
+.ss-options{max-height:220px;overflow-y:auto;padding:4px 6px 8px}
+.ss-options::-webkit-scrollbar{width:4px}
+.ss-options::-webkit-scrollbar-thumb{background:var(--sg-border2);border-radius:2px}
+.ss-opt{
+  display:flex;align-items:center;gap:12px;padding:10px 10px;
+  border-radius:10px;cursor:pointer;transition:background 0.12s;
+  margin-bottom:2px;
+}
+.ss-opt:hover{background:var(--sg-surface2)}
+.ss-opt.sel{background:rgba(26,107,255,0.12);border:1px solid rgba(26,107,255,0.3)}
+.ss-opt.hidden{display:none}
+.sso-ico{font-size:22px;flex-shrink:0;width:28px;text-align:center}
+.sso-name{font-size:13px;font-weight:600;color:var(--sg-text)}
+.sso-sub{font-size:11px;color:var(--sg-muted);margin-top:2px}
+.ss-no-result{padding:14px;text-align:center;font-size:13px;color:var(--sg-muted);display:none}
+
+/* ════ ALERT CALC BOX ════ */
+.alert-calc-box{
+  background:rgba(255,149,0,0.08);border:1px solid rgba(255,149,0,0.2);
+  border-radius:10px;padding:11px 14px;font-size:12px;
+  color:var(--sg-muted);line-height:1.55;margin-top:4px;
+}
+</style>
+</head>
+<body>
+<div class="phone-shell" id="app">
+
+<!-- ══════════════════════════════════════════════
+     BOTTOM NAV (shared, fixed)
+══════════════════════════════════════════════ -->
+<nav class="bottom-nav" id="bnav" style="display:none">
+  <button class="nav-item" id="nb-home"    onclick="go('home')">   <span class="ni">🏠</span><span class="nl">Home</span></button>
+  <button class="nav-item" id="nb-weather" onclick="go('weather')"><span class="ni">🌦️</span><span class="nl">Weather</span></button>
+  <button class="nav-item" id="nb-nav"     onclick="go('nav')">    <span class="ni">🧭</span><span class="nl">Navigate</span></button>
+  <button class="nav-item sos-tab" id="nb-sos" onclick="go('sos')"><span class="ni">🆘</span><span class="nl">SOS</span></button>
+  <button class="nav-item" id="nb-profile" onclick="go('profile')"><span class="ni">👤</span><span class="nl">Profile</span></button>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     SPLASH
+══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-splash" style="background:#060d1a;position:relative;overflow:hidden;padding:0;justify-content:flex-end">
+
+  <!-- ── Scene Canvas ── -->
+  <canvas id="splash-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+
+  <!-- ── Scene indicator dots ── -->
+  <div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:10">
+    <div id="scene-dot-0" style="width:22px;height:4px;border-radius:2px;background:#1a6bff;transition:all 0.4s"></div>
+    <div id="scene-dot-1" style="width:6px;height:4px;border-radius:2px;background:rgba(255,255,255,0.25);transition:all 0.4s"></div>
+  </div>
+
+  <!-- ── Overlay UI ── -->
+  <div style="position:relative;z-index:10;width:100%;padding:28px 28px 40px;background:linear-gradient(to top,rgba(6,13,26,0.97) 0%,rgba(6,13,26,0.82) 60%,transparent 100%)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a6bff,#00c2a8);display:flex;align-items:center;justify-content:center;font-size:20px">⛈️</div>
+      <span style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px">Storm<span style="color:#00c2a8">Guard</span></span>
+    </div>
+    <p id="splash-scene-label" style="font-size:13px;color:rgba(139,154,191,0.9);margin-bottom:6px;min-height:18px;transition:opacity 0.4s">Scene 1 of 2 — Stranded in Floodwater</p>
+    <p style="font-size:15px;color:rgba(240,244,255,0.85);line-height:1.5;margin-bottom:22px">Real-time flood monitoring &amp; vehicle safety intelligence for every road.</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn-s" onclick="go('login')" style="flex:1;padding:13px 0;font-size:15px;border-radius:12px">Sign In</button>
+      <button class="btn-p" onclick="go('signup')" style="flex:1.6;padding:13px 0;font-size:15px;border-radius:12px">Get Started →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ONBOARDING
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-onboarding">
+  <div class="onb-hdr">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="step-ind"><div class="sdot done"></div><div class="sdot active"></div><div class="sdot"></div></div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="onb-body">
+    <h2>Who are you?</h2>
+    <p class="onb-sub">Select your profile for personalised flood safety data</p>
+    <div class="prof-grid">
+      <button class="prof-card" id="pc-driver"  onclick="selProf('driver')"> <span class="pc-ico">🚗</span><span class="pc-lbl">Driver</span></button>
+      <button class="prof-card sel" id="pc-moto" onclick="selProf('moto')">  <span class="pc-ico">🏍️</span><span class="pc-lbl">Motorcyclist</span></button>
+      <button class="prof-card" id="pc-cycle"   onclick="selProf('cycle')">  <span class="pc-ico">🚲</span><span class="pc-lbl">Cyclist</span></button>
+      <button class="prof-card" id="pc-walk"    onclick="selProf('walk')">   <span class="pc-ico">🚶</span><span class="pc-lbl">Pedestrian</span></button>
+    </div>
+    <input class="inp" type="text" placeholder="Full name" id="ob-name" value="Adebayo Johnson"/>
+    <input class="inp" type="tel"  placeholder="Phone number"/>
+    <input class="inp" type="email" placeholder="Email address"/>
+  </div>
+  <div class="onb-foot">
+    <button class="btn-p" onclick="go('login')">Continue →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     HOME
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-home">
+  <div class="topbar topbar-home">
+    <div class="tb-brand"><div class="tb-logo">⛈️</div><span class="tb-name">StormGuard</span></div>
+    <div class="tb-actions">
+      <button class="icon-btn" onclick="go('alerts')">🔔<span class="notif-dot"></span></button>
+      <button class="icon-btn">🔍</button>
+    </div>
+  </div>
+  <div class="sg-scroll">
+    <div class="alert-banner" onclick="go('alerts')">
+      <span style="font-size:20px">🚨</span>
+      <div><div class="at-t">CRITICAL: 3 zones flooded nearby</div><div class="at-s">Lekki Phase 1 · Victoria Island · Ajah — Tap for details</div></div>
+    </div>
+    <div class="sec">Quick Actions</div>
+    <div class="qa-grid">
+      <button class="qa-btn" onclick="go('weather')"><span class="qa-ico">🌦️</span><span class="qa-lbl">Weather</span></button>
+      <button class="qa-btn" onclick="go('nav')">    <span class="qa-ico">🧭</span><span class="qa-lbl">Navigate</span></button>
+      <button class="qa-btn" onclick="go('map')">    <span class="qa-ico">🗺️</span><span class="qa-lbl">Flood Map</span></button>
+      <button class="qa-btn qa-sos" onclick="go('sos')"><span class="qa-ico">🆘</span><span class="qa-lbl">SOS</span></button>
+    </div>
+    <div class="sec">Live Status</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-lbl">Active Alerts</div><div class="stat-val cd">7</div><div class="stat-sub">3 critical</div></div>
+      <div class="stat-card"><div class="stat-lbl">Water Level</div><div class="stat-val cw">42 cm</div><div class="stat-sub">↑ 8 cm/hr</div></div>
+      <div class="stat-card"><div class="stat-lbl">Safe Routes</div><div class="stat-val co">5</div><div class="stat-sub">of 8 checked</div></div>
+      <div class="stat-card"><div class="stat-lbl">Flood Risk</div><div class="stat-val cd">HIGH</div><div class="stat-sub">Next 6 hrs</div></div>
+    </div>
+    <div class="sec">Flood Zones Near You</div>
+    <div class="zones-list">
+      <div class="zone-row" onclick="go('map')"><div class="zdot zcrit"></div><div class="z-info"><div class="z-name">Lekki Phase 1</div><div class="z-dep">85 cm · Rising fast</div></div><span class="badge bd">CRITICAL</span></div>
+      <div class="zone-row" onclick="go('map')"><div class="zdot zhigh"></div><div class="z-info"><div class="z-name">Victoria Island</div><div class="z-dep">52 cm · Stable</div></div><span class="badge bw">HIGH</span></div>
+      <div class="zone-row" onclick="go('map')"><div class="zdot zcaut"></div><div class="z-info"><div class="z-name">Ikeja GRA</div><div class="z-dep">28 cm · Falling</div></div><span class="badge bc">CAUTION</span></div>
+      <div class="zone-row" onclick="go('map')"><div class="zdot zsafe"></div><div class="z-info"><div class="z-name">Yaba</div><div class="z-dep">5 cm · Clear</div></div><span class="badge bo">SAFE</span></div>
+    </div>
+    <div class="sec">Community Reports</div>
+    <div class="feed">
+      <div class="feed-item"><div class="f-av">👤</div><div><div class="f-u">Chidi O. · Lekki</div><div class="f-m">Third Mainland approach submerged. Cars stranded near bus stop.</div><div class="f-t">12 mins ago · ✓ Verified by AI</div></div></div>
+      <div class="feed-item"><div class="f-av">👤</div><div><div class="f-u">Amaka T. · VI</div><div class="f-m">Water receding on Eko Hotel side. Road becoming passable.</div><div class="f-t">28 mins ago</div></div></div>
+      <div class="feed-item"><div class="f-av">👤</div><div><div class="f-u">Emeka K. · Surulere</div><div class="f-m">Ikorodu road blocked near terminal. Use Eric Moore alternative.</div><div class="f-t">45 mins ago · ✓ Verified by AI</div></div></div>
+    </div>
+    <div style="padding:16px"><button class="btn-p" onclick="go('report')">+ Submit Flood Report</button></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     WEATHER
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-weather">
+  <div class="w-hero">
+    <div class="rain-wrap" id="rain-container"></div>
+    <div class="w-loc">📍 Lagos, Nigeria</div>
+    <div class="w-main"><div><div class="w-temp">28°</div><div class="w-desc">Heavy Thunderstorm</div></div><div class="w-ico">⛈️</div></div>
+    <div class="w-meta"><span class="wmeta">💧 92% humidity</span><span class="wmeta">💨 18 km/h</span><span class="wmeta">👁️ 3 km vis.</span></div>
+    <div class="frisk">
+      <div class="fr-lbl">Flood Risk — Next 6 hours</div>
+      <div class="fr-bar-bg"><div class="fr-bar"></div></div>
+      <div class="fr-val">⚠️ HIGH — 72% flood probability. Avoid low-lying areas.</div>
+    </div>
+  </div>
+  <div class="sg-scroll">
+    <div class="sec">Hourly</div>
+    <div class="h-scroll">
+      <div class="h-card now"><div class="h-time">Now</div><div class="h-ico">⛈️</div><div class="h-tmp">28°</div><div class="h-rain">92%</div></div>
+      <div class="h-card"><div class="h-time">14:00</div><div class="h-ico">⛈️</div><div class="h-tmp">27°</div><div class="h-rain">88%</div></div>
+      <div class="h-card"><div class="h-time">15:00</div><div class="h-ico">🌧️</div><div class="h-tmp">26°</div><div class="h-rain">76%</div></div>
+      <div class="h-card"><div class="h-time">16:00</div><div class="h-ico">🌧️</div><div class="h-tmp">26°</div><div class="h-rain">65%</div></div>
+      <div class="h-card"><div class="h-time">17:00</div><div class="h-ico">🌦️</div><div class="h-tmp">27°</div><div class="h-rain">44%</div></div>
+      <div class="h-card"><div class="h-time">18:00</div><div class="h-ico">🌥️</div><div class="h-tmp">28°</div><div class="h-rain">20%</div></div>
+      <div class="h-card"><div class="h-time">19:00</div><div class="h-ico">🌙</div><div class="h-tmp">25°</div><div class="h-rain">12%</div></div>
+      <div class="h-card"><div class="h-time">20:00</div><div class="h-ico">🌙</div><div class="h-tmp">24°</div><div class="h-rain">8%</div></div>
+    </div>
+    <div class="sec">7-Day Forecast + Flood Risk</div>
+    <div class="fc-list">
+      <div class="fc-row"><span class="fc-day">Today</span><span class="fc-ico">⛈️</span><span class="fc-desc">Thunderstorm</span><span class="fc-rain">92%</span><span class="fc-tmp">24–28°</span><span class="badge bd">HIGH</span></div>
+      <div class="fc-row"><span class="fc-day">Tue</span><span class="fc-ico">🌧️</span><span class="fc-desc">Heavy rain</span><span class="fc-rain">78%</span><span class="fc-tmp">23–27°</span><span class="badge bd">HIGH</span></div>
+      <div class="fc-row"><span class="fc-day">Wed</span><span class="fc-ico">🌦️</span><span class="fc-desc">Showers</span><span class="fc-rain">55%</span><span class="fc-tmp">24–29°</span><span class="badge bw">MED</span></div>
+      <div class="fc-row"><span class="fc-day">Thu</span><span class="fc-ico">🌥️</span><span class="fc-desc">Mostly cloudy</span><span class="fc-rain">30%</span><span class="fc-tmp">25–30°</span><span class="badge bo">LOW</span></div>
+      <div class="fc-row"><span class="fc-day">Fri</span><span class="fc-ico">⛅</span><span class="fc-desc">Partly cloudy</span><span class="fc-rain">18%</span><span class="fc-tmp">26–32°</span><span class="badge bo">LOW</span></div>
+      <div class="fc-row"><span class="fc-day">Sat</span><span class="fc-ico">☀️</span><span class="fc-desc">Sunny</span><span class="fc-rain">5%</span><span class="fc-tmp">27–33°</span><span class="badge bo">LOW</span></div>
+      <div class="fc-row"><span class="fc-day">Sun</span><span class="fc-ico">🌤️</span><span class="fc-desc">Fair</span><span class="fc-rain">12%</span><span class="fc-tmp">25–31°</span><span class="badge bo">LOW</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     NAVIGATION
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-nav">
+  <div id="nav-plan-view">
+    <div class="nav-dest">
+      <input class="dest-in" id="dest-in" value="Victoria Island, Lagos" placeholder="Where are you going?"/>
+      <button class="go-btn" onclick="startNav()">Go</button>
+    </div>
+    <div class="route-sel">
+      <button class="r-opt active" onclick="selRoute(0,this)"><div class="r-name">Via Ozumba Mbadiwe</div><div class="r-meta"><span>28 km</span><span>42 min</span><span class="badge bo">SAFE</span></div></button>
+      <button class="r-opt" onclick="selRoute(1,this)"><div class="r-name">Lekki-Epe Expressway</div><div class="r-meta"><span>18 km</span><span>25 min</span><span class="badge bw">RISKY</span></div></button>
+      <button class="r-opt" onclick="selRoute(2,this)"><div class="r-name">Third Mainland Bridge</div><div class="r-meta"><span>22 km</span><span style="color:var(--sg-danger)">AVOID</span><span class="badge bd">DANGER</span></div></button>
+    </div>
+    <div class="nav-map">
+      <svg class="nav-svg" viewBox="0 0 375 200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="375" height="200" fill="#0d1b2e"/>
+        <line x1="0" y1="82" x2="375" y2="82" stroke="rgba(255,255,255,0.08)" stroke-width="7"/>
+        <line x1="0" y1="140" x2="375" y2="140" stroke="rgba(255,255,255,0.06)" stroke-width="5"/>
+        <line x1="140" y1="0" x2="140" y2="200" stroke="rgba(255,255,255,0.08)" stroke-width="7"/>
+        <line x1="265" y1="0" x2="265" y2="200" stroke="rgba(255,255,255,0.06)" stroke-width="5"/>
+        <rect x="170" y="45" width="85" height="58" rx="8" fill="rgba(255,68,68,0.2)" stroke="rgba(255,68,68,0.4)" stroke-width="1"/>
+        <rect x="55" y="108" width="68" height="48" rx="8" fill="rgba(255,149,0,0.15)" stroke="rgba(255,149,0,0.3)" stroke-width="1"/>
+        <polyline points="155,170 143,135 143,85 188,70 255,50 268,40" fill="none" stroke="#1a6bff" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="155" cy="170" r="7" fill="#28c76f" stroke="white" stroke-width="2"/>
+        <text x="155" y="174" text-anchor="middle" font-size="8" fill="white" font-weight="bold">S</text>
+        <circle cx="268" cy="40" r="7" fill="#ff4444" stroke="white" stroke-width="2"/>
+        <text x="268" y="44" text-anchor="middle" font-size="8" fill="white" font-weight="bold">E</text>
+        <circle cx="155" cy="170" r="5" fill="#1a6bff" stroke="white" stroke-width="2"/>
+        <circle cx="155" cy="170" r="12" fill="none" stroke="rgba(26,107,255,0.35)" stroke-width="1.5"/>
+      </svg>
+      <div class="map-fwarn">⚠️ Flood zone avoided — rerouted via Ozumba Mbadiwe</div>
+    </div>
+    <div class="nav-panel">
+      <div class="nav-sumrow">
+        <div class="ns-stat"><div class="ns-v" id="r-dist">28 km</div><div class="ns-l">Distance</div></div>
+        <div class="ns-stat"><div class="ns-v co" id="r-eta">42 min</div><div class="ns-l">ETA</div></div>
+        <div class="ns-stat"><div class="ns-v cw" id="r-haz">2</div><div class="ns-l">Hazards</div></div>
+      </div>
+      <div class="steps-list" id="steps-list">
+        <div class="step-row active-s"><span class="sr-ico">↑</span><span class="sr-txt">Head north on Ozumba Mbadiwe Ave</span><span class="sr-dist">0.4 km</span></div>
+        <div class="step-row"><span class="sr-ico">↱</span><span class="sr-txt">Turn right — Ligali Ayorinde St</span><span class="sr-dist">1.2 km</span></div>
+        <div class="step-row"><span class="sr-ico">⚠️</span><span class="sr-txt">Avoid Third Mainland Bridge</span><span class="badge bd" style="flex-shrink:0">FLOODED</span></div>
+        <div class="step-row"><span class="sr-ico">↰</span><span class="sr-txt">Turn left — Lekki-Epe Expressway</span><span class="sr-dist">5.8 km</span></div>
+        <div class="step-row"><span class="sr-ico">🏁</span><span class="sr-txt">Arrive — Victoria Island</span><span class="sr-dist">28 km</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Active nav HUD -->
+  <div id="nav-active-view" style="display:none">
+    <div class="nav-active-wrap">
+      <div class="nav-map-big">
+        <svg viewBox="0 0 375 340" style="width:100%;height:100%;display:block" xmlns="http://www.w3.org/2000/svg">
+          <rect width="375" height="340" fill="#0d1b2e"/>
+          <line x1="0" y1="140" x2="375" y2="140" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+          <line x1="140" y1="0" x2="140" y2="340" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+          <rect x="170" y="80" width="90" height="70" rx="8" fill="rgba(255,68,68,0.2)" stroke="rgba(255,68,68,0.4)" stroke-width="1"/>
+          <polyline points="155,290 143,240 143,145 190,115 255,85 268,68" fill="none" stroke="#1a6bff" stroke-width="4" stroke-dasharray="8 5" stroke-linecap="round"/>
+          <circle cx="155" cy="290" r="7" fill="#28c76f" stroke="white" stroke-width="2"/>
+          <circle cx="268" cy="68" r="7" fill="#ff4444" stroke="white" stroke-width="2"/>
+          <circle cx="155" cy="290" r="6" fill="#1a6bff" stroke="white" stroke-width="2.5"/>
+          <circle cx="155" cy="290" r="14" fill="none" stroke="rgba(26,107,255,0.4)" stroke-width="2"/>
+        </svg>
+        <div class="nav-inst"><span class="ni-ico" id="nav-inst-ico">↱</span><div><div class="ni-txt" id="nav-inst-txt">Turn right onto Ozumba Mbadiwe</div><div class="ni-dist" id="nav-inst-dist">In 400 m</div></div></div>
+        <div class="nav-fw">⚠️ Flood zone avoided — rerouted via Ozumba Mbadiwe</div>
+      </div>
+      <div class="nav-ap">
+        <div class="nav-sumrow">
+          <div class="ns-stat"><div class="ns-v">28 km</div><div class="ns-l">Remaining</div></div>
+          <div class="ns-stat"><div class="ns-v co">42 min</div><div class="ns-l">ETA</div></div>
+          <div class="ns-stat"><div class="ns-v cw">2</div><div class="ns-l">Hazards</div></div>
+        </div>
+        <div class="nav-abtn-row">
+          <button class="btn-s" style="flex:1;padding:12px 0" onclick="endNav()">End</button>
+          <button class="btn-p" style="flex:2;padding:12px 0" onclick="nextStep()">Next Step →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SOS
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-sos">
+  <div class="topbar"><button class="back-btn" onclick="go('home')">←</button><span class="stitle">Emergency SOS</span><div style="width:36px"></div></div>
+  <div class="sos-ov" id="sos-overlay">
+    <div class="sos-flash">🚨</div>
+    <div class="sos-cnt" id="sos-count">5</div>
+    <div class="sos-ov-t" id="sos-title">Sending SOS Alert…</div>
+    <div class="sos-ov-s" id="sos-sub">Notifying emergency services &amp; your contacts with your GPS location</div>
+    <button class="btn-s sos-cancel-btn" style="width:220px;padding:12px 0;margin-top:8px" onclick="cancelSOS()">Cancel SOS</button>
+  </div>
+  <div class="sg-scroll">
+    <div class="sos-hero">
+      <div class="sos-ring" onclick="activateSOS()">
+        <div class="sr-bg"></div><div class="sr-p1"></div><div class="sr-p2"></div>
+        <div class="sos-inner"><span class="sos-lbl">SOS</span><span class="sos-sub">Tap to activate</span></div>
+      </div>
+      <p class="sos-desc">Tap the button to send an emergency alert with your GPS coordinates to local authorities and your emergency contacts</p>
+    </div>
+    <div class="sos-ig">
+      <div class="sos-ic"><span class="si-ico">📍</span><div><div class="si-lbl">Your Location</div><div class="si-val">6.4281° N, 3.3958° E</div></div></div>
+      <div class="sos-ic"><span class="si-ico">🌊</span><div><div class="si-lbl">Nearest Flood</div><div class="si-val">320m away</div></div></div>
+      <div class="sos-ic"><span class="si-ico">📶</span><div><div class="si-lbl">Signal</div><div class="si-val co">Strong</div></div></div>
+      <div class="sos-ic"><span class="si-ico">🔋</span><div><div class="si-lbl">Battery</div><div class="si-val cw">41%</div></div></div>
+    </div>
+    <div class="sec">Emergency Contacts</div>
+    <div class="ec-list">
+      <div class="ec-row"><div class="ec-ico red">🚒</div><div class="ec-info"><div class="ec-name">Lagos Fire &amp; Rescue</div><div class="ec-num">767 / 112</div></div><button class="ec-call">Call</button></div>
+      <div class="ec-row"><div class="ec-ico blue">🚔</div><div class="ec-info"><div class="ec-name">Lagos State Police</div><div class="ec-num">+234 1 460 0064</div></div><button class="ec-call">Call</button></div>
+      <div class="ec-row"><div class="ec-ico red">🏥</div><div class="ec-info"><div class="ec-name">LASEMA (Disaster Mgmt)</div><div class="ec-num">767</div></div><button class="ec-call">Call</button></div>
+      <div class="ec-row"><div class="ec-ico org">👨‍👩‍👦</div><div class="ec-info"><div class="ec-name">Funmi Johnson (Family)</div><div class="ec-num">+234 802 555 0192</div></div><button class="ec-call">Call</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAP
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-map">
+  <div class="topbar"><button class="back-btn" onclick="go('home')">←</button><span class="stitle">Flood Map</span><div style="width:36px"></div></div>
+  <div class="map-wrap">
+    <svg class="map-svg" viewBox="0 0 375 560" xmlns="http://www.w3.org/2000/svg">
+      <rect width="375" height="560" fill="#0d1b2e"/>
+      <defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(26,107,255,0.05)" stroke-width="1"/></pattern></defs>
+      <rect width="375" height="560" fill="url(#grid)"/>
+      <rect x="0" y="140" width="375" height="8" fill="rgba(255,255,255,0.08)"/>
+      <rect x="0" y="265" width="375" height="6" fill="rgba(255,255,255,0.06)"/>
+      <rect x="0" y="390" width="375" height="5" fill="rgba(255,255,255,0.05)"/>
+      <rect x="128" y="0" width="8" height="560" fill="rgba(255,255,255,0.08)"/>
+      <rect x="256" y="0" width="6" height="560" fill="rgba(255,255,255,0.06)"/>
+      <rect x="55" y="75" width="108" height="82" rx="10" fill="rgba(255,68,68,0.22)" stroke="rgba(255,68,68,0.4)" stroke-width="1"/>
+      <rect x="190" y="188" width="98" height="76" rx="10" fill="rgba(255,149,0,0.18)" stroke="rgba(255,149,0,0.35)" stroke-width="1"/>
+      <rect x="36" y="292" width="78" height="58" rx="8" fill="rgba(255,214,10,0.15)" stroke="rgba(255,214,10,0.3)" stroke-width="1"/>
+      <!-- Pins -->
+      <circle cx="109" cy="110" r="10" fill="#ff4444" stroke="white" stroke-width="1.5"/>
+      <line x1="109" y1="120" x2="109" y2="130" stroke="#ff4444" stroke-width="2"/>
+      <rect x="82" y="132" width="54" height="14" rx="4" fill="rgba(0,0,0,0.75)"/>
+      <text x="109" y="142" text-anchor="middle" font-size="9" fill="white" font-weight="bold">Lekki P1</text>
+      <circle cx="239" cy="222" r="10" fill="#ff9500" stroke="white" stroke-width="1.5"/>
+      <line x1="239" y1="232" x2="239" y2="242" stroke="#ff9500" stroke-width="2"/>
+      <rect x="210" y="244" width="58" height="14" rx="4" fill="rgba(0,0,0,0.75)"/>
+      <text x="239" y="254" text-anchor="middle" font-size="9" fill="white" font-weight="bold">V. Island</text>
+      <circle cx="75" cy="314" r="9" fill="#ffd60a" stroke="white" stroke-width="1.5"/>
+      <text x="75" y="318" text-anchor="middle" font-size="9" fill="white" font-weight="bold">!</text>
+      <line x1="75" y1="323" x2="75" y2="330" stroke="#ffd60a" stroke-width="2"/>
+      <rect x="46" y="332" width="58" height="14" rx="4" fill="rgba(0,0,0,0.75)"/>
+      <text x="75" y="342" text-anchor="middle" font-size="9" fill="white" font-weight="bold">Ikeja GRA</text>
+      <circle cx="284" cy="368" r="9" fill="#28c76f" stroke="white" stroke-width="1.5"/>
+      <line x1="284" y1="377" x2="284" y2="384" stroke="#28c76f" stroke-width="2"/>
+      <rect x="261" y="386" width="46" height="14" rx="4" fill="rgba(0,0,0,0.75)"/>
+      <text x="284" y="396" text-anchor="middle" font-size="9" fill="white" font-weight="bold">Yaba</text>
+      <!-- User -->
+      <circle cx="185" cy="284" r="7" fill="#1a6bff" stroke="white" stroke-width="2"/>
+      <circle cx="185" cy="284" r="14" fill="none" stroke="rgba(26,107,255,0.4)" stroke-width="1.5"/>
+    </svg>
+    <div class="map-legend">
+      <div class="leg-row"><div class="leg-dot" style="background:#ff4444"></div>Critical</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#ff9500"></div>High</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#ffd60a"></div>Caution</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#28c76f"></div>Safe</div>
+    </div>
+    <div class="live-chip"><div class="pdot"></div> Live · 23 sensors</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ALERTS
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-alerts">
+  <div class="topbar"><button class="back-btn" onclick="go('home')">←</button><span class="stitle">Alerts</span><div style="width:36px"></div></div>
+  <div class="af-bar">
+    <button class="fp active" onclick="filterAlerts('all',this)">All</button>
+    <button class="fp" onclick="filterAlerts('critical',this)">Critical</button>
+    <button class="fp" onclick="filterAlerts('high',this)">High</button>
+    <button class="fp" onclick="filterAlerts('caution',this)">Caution</button>
+    <button class="fp" onclick="filterAlerts('safe',this)">Resolved</button>
+  </div>
+  <div class="sg-scroll" id="alerts-scroll">
+    <div class="a-card" data-sev="critical"><div class="a-hdr"><div class="a-sev as-crit">🚨</div><div><div class="a-t">Lekki Phase 1 — Critical Flooding</div><div class="a-l">📍 Lekki-Ajah Expressway, Lagos</div><div class="a-ti">4 mins ago · IoT Sensor #LK-07</div></div></div><div class="a-body"><div class="dep-lbl">Water depth: 85cm</div><div class="dep-bg"><div class="dep-fill" style="width:85%;background:var(--sg-danger)"></div></div><div class="a-msg mc">⚠️ Exceeds safe limit for all vehicles. Do not enter.</div></div></div>
+    <div class="a-card" data-sev="high"><div class="a-hdr"><div class="a-sev as-high">⚡</div><div><div class="a-t">Victoria Island — High Water</div><div class="a-l">📍 Adeola Odeku St, Victoria Island</div><div class="a-ti">11 mins ago · IoT Sensor #VI-03</div></div></div><div class="a-body"><div class="dep-lbl">Water depth: 52cm</div><div class="dep-bg"><div class="dep-fill" style="width:65%;background:var(--sg-warn)"></div></div><div class="a-msg mh">⚠️ Motorcycles &amp; sedans should avoid. SUV with caution.</div></div></div>
+    <div class="a-card" data-sev="caution"><div class="a-hdr"><div class="a-sev as-caut">⚠️</div><div><div class="a-t">Ikeja GRA — Watch Advisory</div><div class="a-l">📍 Awolowo Way, Ikeja</div><div class="a-ti">22 mins ago · Community report</div></div></div><div class="a-body"><div class="dep-lbl">Water depth: 28cm · Falling</div><div class="dep-bg"><div class="dep-fill" style="width:35%;background:#ffd60a"></div></div><div class="a-msg mca">Caution advised. Pedestrians use elevated paths.</div></div></div>
+    <div class="a-card" data-sev="safe"><div class="a-hdr"><div class="a-sev as-safe">✅</div><div><div class="a-t">Yaba — All Clear</div><div class="a-l">📍 Herbert Macaulay Way, Yaba</div><div class="a-ti">Resolved 1 hr ago · Sensor confirmed</div></div></div><div class="a-body"><div class="dep-lbl">Water depth: 5cm · Normal</div><div class="dep-bg"><div class="dep-fill" style="width:6%;background:var(--sg-ok)"></div></div><div class="a-msg ms">Road fully passable. All vehicle types safe.</div></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     VEHICLE
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-vehicle">
+  <div class="topbar"><button class="back-btn" onclick="go('home')">←</button><span class="stitle">Vehicle Safety</span><div style="width:36px"></div></div>
+  <div class="sg-scroll">
+    <div class="sec">Select Vehicle Type</div>
+    <div class="veh-grid">
+      <button class="veh-card sel" id="vc-suv"  onclick="selVeh('suv',60,this)"> <span class="vi">🚙</span><span class="vn">SUV / 4x4</span><span class="vl">Safe up to 60cm</span></button>
+      <button class="veh-card" id="vc-sedan" onclick="selVeh('sedan',35,this)"> <span class="vi">🚗</span><span class="vn">Sedan</span><span class="vl">Safe up to 35cm</span></button>
+      <button class="veh-card" id="vc-moto"  onclick="selVeh('moto',20,this)">  <span class="vi">🏍️</span><span class="vn">Motorcycle</span><span class="vl">Safe up to 20cm</span></button>
+      <button class="veh-card" id="vc-truck" onclick="selVeh('truck',80,this)"> <span class="vi">🚛</span><span class="vn">Truck / Bus</span><span class="vl">Safe up to 80cm</span></button>
+    </div>
+    <div class="sec">Route Risk Assessment</div>
+    <div class="gauge-card">
+      <div class="gauge-t" id="gauge-title">Risk for <strong>SUV / 4x4</strong></div>
+      <div class="gauge-bg"><div class="gauge-fill" id="gauge-fill" style="width:87%;background:var(--sg-warn)"></div></div>
+      <div class="gauge-lbls"><span>Safe</span><span>Moderate</span><span>Dangerous</span></div>
+      <div class="gauge-verd" id="gauge-verd" style="color:var(--sg-warn)">Proceed with caution — current depth near limit</div>
+    </div>
+    <div class="sec">Suggested Routes</div>
+    <div class="r-card" onclick="go('nav')"><div class="r-card-hdr"><span class="r-card-name">Via Ozumba Mbadiwe</span><span class="badge bo">SAFE</span></div><div class="r-card-det">28 km · 42 min · Max flood depth 12cm</div></div>
+    <div class="r-card" onclick="go('nav')"><div class="r-card-hdr"><span class="r-card-name">Lekki-Epe Expressway</span><span class="badge bw">RISKY</span></div><div class="r-card-det">18 km · 25 min · Max flood depth 47cm</div></div>
+    <div class="r-card"><div class="r-card-hdr"><span class="r-card-name">Third Mainland Bridge</span><span class="badge bd">DANGER</span></div><div class="r-card-det">22 km · AVOID · Max flood depth 92cm</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PROFILE
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-profile">
+  <div class="p-hero">
+    <div class="p-av">🧑🏾</div>
+    <div class="p-name">Adebayo Johnson</div>
+    <div class="p-sub">Lagos, Nigeria · StormGuard v2.0</div>
+    <div class="p-badges">
+      <span class="pbg">🏍️ Motorcyclist</span>
+      <span class="pbg">47 Reports</span>
+      <span class="pbg ok">Verified</span>
+    </div>
+  </div>
+  <div class="sg-scroll">
+    <div class="sec">My Vehicle</div>
+    <div class="set-sec">
+      <div class="set-row" onclick="go('vehicle')"><span class="sr-i">🏍️</span><span class="sr-l">Honda CB500F</span><span class="sr-v">Safe to 20cm</span><span class="sr-a">›</span></div>
+    </div>
+    <div class="sec">Notifications</div>
+    <div class="set-sec">
+      <div class="set-row"><span class="sr-i">🔔</span><span class="sr-l">Critical Alerts</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+      <div class="set-row"><span class="sr-i">📍</span><span class="sr-l">Location Tracking</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+      <div class="set-row"><span class="sr-i">📊</span><span class="sr-l">Daily Summary</span><div class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+    </div>
+    <div class="sec">My Activity</div>
+    <div class="set-sec">
+      <div class="set-row" onclick="go('alerts')"><span class="sr-i">📋</span><span class="sr-l">My Reports</span><span class="sr-v">47 submitted</span><span class="sr-a">›</span></div>
+      <div class="set-row" onclick="go('nav')"><span class="sr-i">🛡️</span><span class="sr-l">Saved Safe Routes</span><span class="sr-v">3 routes</span><span class="sr-a">›</span></div>
+      <div class="set-row" onclick="go('alerts')"><span class="sr-i">📜</span><span class="sr-l">Alert History</span><span class="sr-v">View all</span><span class="sr-a">›</span></div>
+    </div>
+    <div class="sec">App</div>
+    <div class="set-sec">
+      <div class="set-row"><span class="sr-i">🌐</span><span class="sr-l">Language</span><span class="sr-v">English</span></div>
+      <div class="set-row"><span class="sr-i">ℹ️</span><span class="sr-l">StormGuard v2.0</span><span class="sr-v">Latest</span></div>
+      <div class="set-row" onclick="signOut()"><span class="sr-i">🚪</span><span class="sr-l sr-ld">Sign Out</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     REPORT
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-report">
+  <div class="topbar"><button class="back-btn" onclick="goBack()">←</button><span class="stitle">Report Flood</span><div style="width:36px"></div></div>
+  <div class="sg-scroll" style="padding:16px 16px 80px" id="report-form">
+    <div class="photo-ph"><span style="font-size:28px">📷</span><span>Tap to add photo</span></div>
+    <label class="flabel">Severity Level</label>
+    <select class="sel"><option>⚠️ Critical — Road impassable</option><option>⚡ High — Dangerous for most vehicles</option><option>! Moderate — Drive with caution</option><option>✓ Minor — Passable but wet</option></select>
+    <label class="flabel">Location</label>
+    <input class="inp" id="rep-loc" placeholder="Street / Landmark"/>
+    <label class="flabel">Description</label>
+    <textarea class="ta" placeholder="Describe what you're seeing — water depth, road conditions, stranded vehicles…"></textarea>
+    <label class="flabel">Your Vehicle Type</label>
+    <select class="sel"><option>🚙 SUV / 4x4</option><option>🚗 Sedan</option><option>🏍️ Motorcycle</option><option>🚶 Pedestrian</option></select>
+    <button class="btn-p" style="margin-top:8px" onclick="submitReport()">Submit Report</button>
+  </div>
+  <div style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:60vh" id="report-success">
+    <div style="font-size:56px">✅</div>
+    <div style="font-size:20px;font-weight:700;color:var(--sg-text)">Report Submitted!</div>
+    <div style="font-size:14px;color:var(--sg-muted);text-align:center;padding:0 32px">Thank you for helping the StormGuard community.</div>
+  </div>
+</div>
+<!-- ══════════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════════ -->
+<div class="screen auth-screen" id="screen-login">
+  <div class="auth-top">
+    <div class="auth-logo">⛈️</div>
+    <div class="auth-title">Storm<span>Guard</span></div>
+    <p class="auth-sub">Sign in to your account to continue</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab" onclick="go('signup')">Sign Up</button>
+      <button class="auth-tab active">Sign In</button>
+    </div>
+    <div class="auth-error" id="login-error">Incorrect email or password. Please try again.</div>
+    <div class="auth-success" id="login-ok">✓ Signed in successfully!</div>
+    <div class="inp-wrap">
+      <span class="inp-icon">✉️</span>
+      <input class="inp" type="email" id="login-email" placeholder="Email address" style="margin-bottom:0"/>
+    </div>
+    <div class="inp-wrap" style="margin-bottom:4px">
+      <span class="inp-icon">🔒</span>
+      <input class="inp" type="password" id="login-pwd" placeholder="Password" style="margin-bottom:0"/>
+      <button class="inp-eye" onclick="togglePwd('login-pwd',this)">👁️</button>
+    </div>
+    <span class="forgot-link" onclick="go('forgot')">Forgot password?</span>
+    <button class="btn-p" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="auth-divider"><span>or continue with</span></div>
+    <div class="social-btns">
+      <button class="social-btn" onclick="socialLogin('Google')">🌐 Google</button>
+      <button class="social-btn" onclick="socialLogin('Apple')">🍎 Apple</button>
+    </div>
+    <div class="auth-foot">Don't have an account? <a onclick="go('signup')">Sign up free</a></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SIGN UP
+══════════════════════════════════════════════ -->
+<div class="screen auth-screen" id="screen-signup">
+  <div class="auth-top">
+    <div class="auth-logo">⛈️</div>
+    <div class="auth-title">Storm<span>Guard</span></div>
+    <p class="auth-sub">Create your free account</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active">Sign Up</button>
+      <button class="auth-tab" onclick="go('login')">Sign In</button>
+    </div>
+    <div class="auth-error" id="signup-error"></div>
+    <div class="auth-success" id="signup-ok">✓ Account created! Redirecting…</div>
+    <div class="inp-wrap">
+      <span class="inp-icon">👤</span>
+      <input class="inp" type="text" id="su-name" placeholder="Full name" style="margin-bottom:0"/>
+    </div>
+    <div class="inp-wrap">
+      <span class="inp-icon">✉️</span>
+      <input class="inp" type="email" id="su-email" placeholder="Email address" style="margin-bottom:0"/>
+    </div>
+    <div class="inp-wrap" style="margin-bottom:0">
+      <span class="inp-icon">🔒</span>
+      <input class="inp" type="password" id="su-pwd" placeholder="Create password" style="margin-bottom:0" oninput="checkPwdStrength(this.value)"/>
+      <button class="inp-eye" onclick="togglePwd('su-pwd',this)">👁️</button>
+    </div>
+    <div class="pwd-strength"><div class="pwd-bar" id="pwd-bar"></div></div>
+    <div class="pwd-hint" id="pwd-hint">Use 8+ characters with numbers and symbols</div>
+    <div class="inp-wrap">
+      <span class="inp-icon">🔒</span>
+      <input class="inp" type="password" id="su-pwd2" placeholder="Confirm password" style="margin-bottom:0"/>
+      <button class="inp-eye" onclick="togglePwd('su-pwd2',this)">👁️</button>
+    </div>
+    <div class="inp-wrap" style="margin-top:4px">
+      <span class="inp-icon">📍</span>
+      <select class="inp" id="su-country" style="margin-bottom:0;padding-left:42px">
+        <option value="">🌍 Select your location / country</option>
+        <option value="Afghanistan">Afghanistan</option>
+        <option value="Albania">Albania</option>
+        <option value="Algeria">Algeria</option>
+        <option value="Andorra">Andorra</option>
+        <option value="Angola">Angola</option>
+        <option value="Antigua and Barbuda">Antigua and Barbuda</option>
+        <option value="Argentina">Argentina</option>
+        <option value="Armenia">Armenia</option>
+        <option value="Australia">Australia</option>
+        <option value="Austria">Austria</option>
+        <option value="Azerbaijan">Azerbaijan</option>
+        <option value="Bahamas">Bahamas</option>
+        <option value="Bahrain">Bahrain</option>
+        <option value="Bangladesh">Bangladesh</option>
+        <option value="Barbados">Barbados</option>
+        <option value="Belarus">Belarus</option>
+        <option value="Belgium">Belgium</option>
+        <option value="Belize">Belize</option>
+        <option value="Benin">Benin</option>
+        <option value="Bhutan">Bhutan</option>
+        <option value="Bolivia">Bolivia</option>
+        <option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option>
+        <option value="Botswana">Botswana</option>
+        <option value="Brazil">Brazil</option>
+        <option value="Brunei">Brunei</option>
+        <option value="Bulgaria">Bulgaria</option>
+        <option value="Burkina Faso">Burkina Faso</option>
+        <option value="Burundi">Burundi</option>
+        <option value="Cabo Verde">Cabo Verde</option>
+        <option value="Cambodia">Cambodia</option>
+        <option value="Cameroon">Cameroon</option>
+        <option value="Canada">Canada</option>
+        <option value="Central African Republic">Central African Republic</option>
+        <option value="Chad">Chad</option>
+        <option value="Chile">Chile</option>
+        <option value="China">China</option>
+        <option value="Colombia">Colombia</option>
+        <option value="Comoros">Comoros</option>
+        <option value="Congo (Brazzaville)">Congo (Brazzaville)</option>
+        <option value="Congo (Kinshasa)">Congo (Kinshasa)</option>
+        <option value="Costa Rica">Costa Rica</option>
+        <option value="Croatia">Croatia</option>
+        <option value="Cuba">Cuba</option>
+        <option value="Cyprus">Cyprus</option>
+        <option value="Czech Republic">Czech Republic</option>
+        <option value="Denmark">Denmark</option>
+        <option value="Djibouti">Djibouti</option>
+        <option value="Dominica">Dominica</option>
+        <option value="Dominican Republic">Dominican Republic</option>
+        <option value="Ecuador">Ecuador</option>
+        <option value="Egypt">Egypt</option>
+        <option value="El Salvador">El Salvador</option>
+        <option value="Equatorial Guinea">Equatorial Guinea</option>
+        <option value="Eritrea">Eritrea</option>
+        <option value="Estonia">Estonia</option>
+        <option value="Eswatini">Eswatini</option>
+        <option value="Ethiopia">Ethiopia</option>
+        <option value="Fiji">Fiji</option>
+        <option value="Finland">Finland</option>
+        <option value="France">France</option>
+        <option value="Gabon">Gabon</option>
+        <option value="Gambia">Gambia</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Germany">Germany</option>
+        <option value="Ghana">Ghana</option>
+        <option value="Greece">Greece</option>
+        <option value="Grenada">Grenada</option>
+        <option value="Guatemala">Guatemala</option>
+        <option value="Guinea">Guinea</option>
+        <option value="Guinea-Bissau">Guinea-Bissau</option>
+        <option value="Guyana">Guyana</option>
+        <option value="Haiti">Haiti</option>
+        <option value="Honduras">Honduras</option>
+        <option value="Hungary">Hungary</option>
+        <option value="Iceland">Iceland</option>
+        <option value="India">India</option>
+        <option value="Indonesia">Indonesia</option>
+        <option value="Iran">Iran</option>
+        <option value="Iraq">Iraq</option>
+        <option value="Ireland">Ireland</option>
+        <option value="Israel">Israel</option>
+        <option value="Italy">Italy</option>
+        <option value="Jamaica">Jamaica</option>
+        <option value="Japan">Japan</option>
+        <option value="Jordan">Jordan</option>
+        <option value="Kazakhstan">Kazakhstan</option>
+        <option value="Kenya">Kenya</option>
+        <option value="Kiribati">Kiribati</option>
+        <option value="Kuwait">Kuwait</option>
+        <option value="Kyrgyzstan">Kyrgyzstan</option>
+        <option value="Laos">Laos</option>
+        <option value="Latvia">Latvia</option>
+        <option value="Lebanon">Lebanon</option>
+        <option value="Lesotho">Lesotho</option>
+        <option value="Liberia">Liberia</option>
+        <option value="Libya">Libya</option>
+        <option value="Liechtenstein">Liechtenstein</option>
+        <option value="Lithuania">Lithuania</option>
+        <option value="Luxembourg">Luxembourg</option>
+        <option value="Madagascar">Madagascar</option>
+        <option value="Malawi">Malawi</option>
+        <option value="Malaysia">Malaysia</option>
+        <option value="Maldives">Maldives</option>
+        <option value="Mali">Mali</option>
+        <option value="Malta">Malta</option>
+        <option value="Marshall Islands">Marshall Islands</option>
+        <option value="Mauritania">Mauritania</option>
+        <option value="Mauritius">Mauritius</option>
+        <option value="Mexico">Mexico</option>
+        <option value="Micronesia">Micronesia</option>
+        <option value="Moldova">Moldova</option>
+        <option value="Monaco">Monaco</option>
+        <option value="Mongolia">Mongolia</option>
+        <option value="Montenegro">Montenegro</option>
+        <option value="Morocco">Morocco</option>
+        <option value="Mozambique">Mozambique</option>
+        <option value="Myanmar">Myanmar</option>
+        <option value="Namibia">Namibia</option>
+        <option value="Nauru">Nauru</option>
+        <option value="Nepal">Nepal</option>
+        <option value="Netherlands">Netherlands</option>
+        <option value="New Zealand">New Zealand</option>
+        <option value="Nicaragua">Nicaragua</option>
+        <option value="Niger">Niger</option>
+        <option value="Nigeria">Nigeria</option>
+        <option value="North Korea">North Korea</option>
+        <option value="North Macedonia">North Macedonia</option>
+        <option value="Norway">Norway</option>
+        <option value="Oman">Oman</option>
+        <option value="Pakistan">Pakistan</option>
+        <option value="Palau">Palau</option>
+        <option value="Palestine">Palestine</option>
+        <option value="Panama">Panama</option>
+        <option value="Papua New Guinea">Papua New Guinea</option>
+        <option value="Paraguay">Paraguay</option>
+        <option value="Peru">Peru</option>
+        <option value="Philippines">Philippines</option>
+        <option value="Poland">Poland</option>
+        <option value="Portugal">Portugal</option>
+        <option value="Qatar">Qatar</option>
+        <option value="Romania">Romania</option>
+        <option value="Russia">Russia</option>
+        <option value="Rwanda">Rwanda</option>
+        <option value="Saint Kitts and Nevis">Saint Kitts and Nevis</option>
+        <option value="Saint Lucia">Saint Lucia</option>
+        <option value="Saint Vincent and the Grenadines">Saint Vincent and the Grenadines</option>
+        <option value="Samoa">Samoa</option>
+        <option value="San Marino">San Marino</option>
+        <option value="Sao Tome and Principe">Sao Tome and Principe</option>
+        <option value="Saudi Arabia">Saudi Arabia</option>
+        <option value="Senegal">Senegal</option>
+        <option value="Serbia">Serbia</option>
+        <option value="Seychelles">Seychelles</option>
+        <option value="Sierra Leone">Sierra Leone</option>
+        <option value="Singapore">Singapore</option>
+        <option value="Slovakia">Slovakia</option>
+        <option value="Slovenia">Slovenia</option>
+        <option value="Solomon Islands">Solomon Islands</option>
+        <option value="Somalia">Somalia</option>
+        <option value="South Africa">South Africa</option>
+        <option value="South Korea">South Korea</option>
+        <option value="South Sudan">South Sudan</option>
+        <option value="Spain">Spain</option>
+        <option value="Sri Lanka">Sri Lanka</option>
+        <option value="Sudan">Sudan</option>
+        <option value="Suriname">Suriname</option>
+        <option value="Sweden">Sweden</option>
+        <option value="Switzerland">Switzerland</option>
+        <option value="Syria">Syria</option>
+        <option value="Taiwan">Taiwan</option>
+        <option value="Tajikistan">Tajikistan</option>
+        <option value="Tanzania">Tanzania</option>
+        <option value="Thailand">Thailand</option>
+        <option value="Timor-Leste">Timor-Leste</option>
+        <option value="Togo">Togo</option>
+        <option value="Tonga">Tonga</option>
+        <option value="Trinidad and Tobago">Trinidad and Tobago</option>
+        <option value="Tunisia">Tunisia</option>
+        <option value="Turkey">Turkey</option>
+        <option value="Turkmenistan">Turkmenistan</option>
+        <option value="Tuvalu">Tuvalu</option>
+        <option value="Uganda">Uganda</option>
+        <option value="Ukraine">Ukraine</option>
+        <option value="United Arab Emirates">United Arab Emirates</option>
+        <option value="United Kingdom">United Kingdom</option>
+        <option value="United States">United States</option>
+        <option value="Uruguay">Uruguay</option>
+        <option value="Uzbekistan">Uzbekistan</option>
+        <option value="Vanuatu">Vanuatu</option>
+        <option value="Vatican City">Vatican City</option>
+        <option value="Venezuela">Venezuela</option>
+        <option value="Vietnam">Vietnam</option>
+        <option value="Yemen">Yemen</option>
+        <option value="Zambia">Zambia</option>
+        <option value="Zimbabwe">Zimbabwe</option>
+      </select>
+    </div>
+    <div class="terms-row" onclick="toggleTerms()">
+      <div class="terms-check" id="terms-check"></div>
+      <span class="terms-txt">I agree to the <a>Terms of Service</a> and <a>Privacy Policy</a></span>
+    </div>
+    <button class="btn-p" id="signup-btn" onclick="doSignup()">Create Account</button>
+    <div class="auth-divider"><span>or continue with</span></div>
+    <div class="social-btns">
+      <button class="social-btn" onclick="socialLogin('Google')">🌐 Google</button>
+      <button class="social-btn" onclick="socialLogin('Apple')">🍎 Apple</button>
+    </div>
+    <div class="auth-foot">Already have an account? <a onclick="go('login')">Sign in</a></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     FORGOT PASSWORD
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-forgot" style="padding:0">
+  <div class="topbar"><button class="back-btn" onclick="go('login')">←</button><span class="stitle">Reset Password</span><div style="width:36px"></div></div>
+  <div style="padding:32px 24px">
+    <div style="font-size:48px;text-align:center;margin-bottom:16px">🔑</div>
+    <h2 style="font-size:22px;font-weight:700;color:var(--sg-text);margin-bottom:8px;text-align:center">Forgot your password?</h2>
+    <p style="font-size:14px;color:var(--sg-muted);text-align:center;margin-bottom:28px;line-height:1.6">Enter your email address and we'll send you a link to reset your password.</p>
+    <div class="auth-error" id="forgot-error">No account found with that email.</div>
+    <div class="auth-success" id="forgot-ok">✓ Reset link sent! Check your email inbox.</div>
+    <div class="inp-wrap">
+      <span class="inp-icon">✉️</span>
+      <input class="inp" type="email" id="forgot-email" placeholder="Your email address" style="margin-bottom:0"/>
+    </div>
+    <button class="btn-p" id="forgot-btn" onclick="doForgot()" style="margin-top:12px">Send Reset Link</button>
+    <button class="btn-s" onclick="go('login')" style="margin-top:10px">Back to Sign In</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SETUP STEP 1 — Choose Usage Type
+══════════════════════════════════════════════ -->
+<div class="screen setup-screen" id="screen-setup-usage">
+  <div class="setup-hero">
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px">
+      <div class="setup-step-dot active" style="width:28px"></div>
+      <div class="setup-step-dot" style="width:14px"></div>
+      <div class="setup-step-dot" style="width:14px"></div>
+    </div>
+    <div class="setup-ico">🚦</div>
+    <div class="setup-title">How do you get around?</div>
+    <div class="setup-sub">Pick your mode — then select your specific vehicle, bike or mobility profile below</div>
+  </div>
+
+  <div class="setup-scroll">
+
+    <!-- ── Mode selector tabs ── -->
+    <div class="mode-tabs">
+      <button class="mode-tab" id="mt-vehicle"    onclick="switchMode('vehicle')"><div style="font-size:18px;margin-bottom:3px">🚗</div>Vehicle</button>
+      <button class="mode-tab" id="mt-motorcycle" onclick="switchMode('motorcycle')"><div style="font-size:18px;margin-bottom:3px">🏍️</div>Moto</button>
+      <button class="mode-tab" id="mt-human"      onclick="switchMode('human')"><div style="font-size:18px;margin-bottom:3px">🚶</div>On Foot</button>
+    </div>
+
+    <!-- ════════ VEHICLE PANEL ════════ -->
+    <div id="mode-panel-vehicle" class="mode-panel" style="display:none">
+      <div class="detail-sec-title" style="padding:0 0 8px">Select Vehicle Type</div>
+      <!-- Searchable dropdown -->
+      <div class="search-select-wrap" id="veh-ss">
+        <div class="ss-input-row">
+          <div class="ss-display" id="veh-display" onclick="toggleDropdown('veh-list')">
+            <span class="ss-ico" id="veh-ico">🚙</span>
+            <span class="ss-val" id="veh-val">SUV / 4x4</span>
+            <span class="ss-arrow">▾</span>
+          </div>
+          <button class="ss-search-btn" onclick="toggleDropdown('veh-list');focusSearch('veh-search')">🔍</button>
+        </div>
+        <div class="ss-dropdown" id="veh-list" style="display:none">
+          <div class="ss-search-wrap">
+            <input class="ss-search" id="veh-search" placeholder="Search vehicle type…" oninput="filterList(this,'veh-list')"/>
+          </div>
+          <div class="ss-options">
+            <div class="ss-opt" data-val="sedan"      data-ico="🚗" data-lim="30" onclick="selectVehicle(this)"><span class="sso-ico">🚗</span><div><div class="sso-name">Sedan</div><div class="sso-sub">Safe to ~30 cm · Low ground clearance</div></div></div>
+            <div class="ss-opt sel" data-val="suv"    data-ico="🚙" data-lim="60" onclick="selectVehicle(this)"><span class="sso-ico">🚙</span><div><div class="sso-name">SUV / 4x4</div><div class="sso-sub">Safe to ~60 cm · High clearance</div></div></div>
+            <div class="ss-opt" data-val="pickup"     data-ico="🛻" data-lim="65" onclick="selectVehicle(this)"><span class="sso-ico">🛻</span><div><div class="sso-name">Pickup Truck</div><div class="sso-sub">Safe to ~65 cm · Very high clearance</div></div></div>
+            <div class="ss-opt" data-val="minivan"    data-ico="🚐" data-lim="45" onclick="selectVehicle(this)"><span class="sso-ico">🚐</span><div><div class="sso-name">Minivan / MPV</div><div class="sso-sub">Safe to ~45 cm · Medium clearance</div></div></div>
+            <div class="ss-opt" data-val="compact"    data-ico="🚕" data-lim="28" onclick="selectVehicle(this)"><span class="sso-ico">🚕</span><div><div class="sso-name">Compact / Hatchback</div><div class="sso-sub">Safe to ~28 cm · Low clearance</div></div></div>
+            <div class="ss-opt" data-val="coupe"      data-ico="🏎️" data-lim="22" onclick="selectVehicle(this)"><span class="sso-ico">🏎️</span><div><div class="sso-name">Coupe / Sports Car</div><div class="sso-sub">Safe to ~22 cm · Very low clearance</div></div></div>
+            <div class="ss-opt" data-val="bus"        data-ico="🚌" data-lim="80" onclick="selectVehicle(this)"><span class="sso-ico">🚌</span><div><div class="sso-name">Bus / Coach</div><div class="sso-sub">Safe to ~80 cm · Very high clearance</div></div></div>
+            <div class="ss-opt" data-val="truck"      data-ico="🚛" data-lim="90" onclick="selectVehicle(this)"><span class="sso-ico">🚛</span><div><div class="sso-name">Heavy Truck / Lorry</div><div class="sso-sub">Safe to ~90 cm · Extreme clearance</div></div></div>
+            <div class="ss-opt" data-val="tricycle"   data-ico="🛺" data-lim="18" onclick="selectVehicle(this)"><span class="sso-ico">🛺</span><div><div class="sso-name">Tricycle / Keke</div><div class="sso-sub">Safe to ~18 cm · Very low</div></div></div>
+            <div class="ss-opt" data-val="ambulance"  data-ico="🚑" data-lim="55" onclick="selectVehicle(this)"><span class="sso-ico">🚑</span><div><div class="sso-name">Ambulance</div><div class="sso-sub">Safe to ~55 cm · High clearance</div></div></div>
+            <div class="ss-opt" data-val="firetruck"  data-ico="🚒" data-lim="95" onclick="selectVehicle(this)"><span class="sso-ico">🚒</span><div><div class="sso-name">Fire Truck</div><div class="sso-sub">Safe to ~95 cm · Emergency grade</div></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Ground clearance slider -->
+      <div class="detail-row" style="margin-top:12px">
+        <div class="detail-row-lbl">Fine-tune ground clearance</div>
+        <div class="detail-row-val"><span id="clearance-val">19</span> cm</div>
+        <input class="sg-range" type="range" id="clearance-range" min="10" max="45" value="19" step="1"
+          oninput="updateRange('clearance-range','clearance-val',null,' cm');updateFloodLimitCalc()"/>
+        <div class="range-marks"><span>10 cm</span><span>27 cm</span><span>45 cm</span></div>
+      </div>
+      <div class="alert-calc-box">
+        ⚡ You'll be alerted when flood depth exceeds <strong id="clearance-calc" style="color:var(--sg-warn)">~57 cm</strong>
+        &nbsp;<span style="color:var(--sg-muted);font-weight:400">(3× your clearance)</span>
+      </div>
+    </div>
+
+    <!-- ════════ MOTORCYCLE PANEL ════════ -->
+    <div id="mode-panel-motorcycle" class="mode-panel" style="display:none">
+      <div class="detail-sec-title" style="padding:0 0 8px">Select Motorcycle Type</div>
+      <div class="search-select-wrap" id="moto-ss">
+        <div class="ss-input-row">
+          <div class="ss-display" id="moto-display" onclick="toggleDropdown('moto-list')">
+            <span class="ss-ico" id="moto-ico">🛵</span>
+            <span class="ss-val" id="moto-val">Scooter</span>
+            <span class="ss-arrow">▾</span>
+          </div>
+          <button class="ss-search-btn" onclick="toggleDropdown('moto-list');focusSearch('moto-search')">🔍</button>
+        </div>
+        <div class="ss-dropdown" id="moto-list" style="display:none">
+          <div class="ss-search-wrap">
+            <input class="ss-search" id="moto-search" placeholder="Search motorcycle type…" oninput="filterList(this,'moto-list')"/>
+          </div>
+          <div class="ss-options">
+            <div class="ss-opt sel" data-val="scooter"   data-ico="🛵" data-lim="17" onclick="selectMoto(this)"><span class="sso-ico">🛵</span><div><div class="sso-name">Scooter / Vespa</div><div class="sso-sub">Safe to ~17 cm exhaust height</div></div></div>
+            <div class="ss-opt" data-val="standard"      data-ico="🏍️" data-lim="22" onclick="selectMoto(this)"><span class="sso-ico">🏍️</span><div><div class="sso-name">Standard / Naked Bike</div><div class="sso-sub">Safe to ~22 cm exhaust height</div></div></div>
+            <div class="ss-opt" data-val="enduro"        data-ico="🏕️" data-lim="35" onclick="selectMoto(this)"><span class="sso-ico">🏕️</span><div><div class="sso-name">Enduro / Trail Bike</div><div class="sso-sub">Safe to ~35 cm — high clearance</div></div></div>
+            <div class="ss-opt" data-val="sportbike"     data-ico="🏎️" data-lim="14" onclick="selectMoto(this)"><span class="sso-ico">🏎️</span><div><div class="sso-name">Sport / Race Bike</div><div class="sso-sub">Safe to ~14 cm — very low exhaust</div></div></div>
+            <div class="ss-opt" data-val="cruiser"       data-ico="🛥️" data-lim="20" onclick="selectMoto(this)"><span class="sso-ico">🛻</span><div><div class="sso-name">Cruiser / Chopper</div><div class="sso-sub">Safe to ~20 cm exhaust height</div></div></div>
+            <div class="ss-opt" data-val="adventure"     data-ico="🧭" data-lim="30" onclick="selectMoto(this)"><span class="sso-ico">🧭</span><div><div class="sso-name">Adventure / Touring</div><div class="sso-sub">Safe to ~30 cm — medium clearance</div></div></div>
+            <div class="ss-opt" data-val="dirtbike"      data-ico="🏔️" data-lim="40" onclick="selectMoto(this)"><span class="sso-ico">🏔️</span><div><div class="sso-name">Dirt Bike / MX</div><div class="sso-sub">Safe to ~40 cm — off-road spec</div></div></div>
+            <div class="ss-opt" data-val="moped"         data-ico="🛵" data-lim="12" onclick="selectMoto(this)"><span class="sso-ico">🛵</span><div><div class="sso-name">Moped / 50cc</div><div class="sso-sub">Safe to ~12 cm — avoid flooding</div></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Exhaust slider -->
+      <div class="detail-row" style="margin-top:12px">
+        <div class="detail-row-lbl">Fine-tune exhaust pipe height</div>
+        <div class="detail-row-val"><span id="exhaust-val">17</span> cm</div>
+        <input class="sg-range" type="range" id="exhaust-range" min="8" max="45" value="17" step="1"
+          oninput="updateRange('exhaust-range','exhaust-val',null,' cm');updateExhaustCalc()"/>
+        <div class="range-marks"><span>8 cm</span><span>26 cm</span><span>45 cm</span></div>
+      </div>
+      <div class="alert-calc-box">
+        ⚡ Alert fires when water exceeds <strong id="exhaust-calc" style="color:var(--sg-warn)">14 cm</strong>
+        &nbsp;<span style="color:var(--sg-muted);font-weight:400">(3 cm below your exhaust)</span>
+      </div>
+    </div>
+
+    <!-- ════════ ON FOOT / HUMAN PANEL ════════ -->
+    <div id="mode-panel-human" class="mode-panel" style="display:none">
+      <div class="detail-sec-title" style="padding:0 0 8px">Select Mobility Profile</div>
+      <div class="search-select-wrap" id="human-ss">
+        <div class="ss-input-row">
+          <div class="ss-display" id="human-display" onclick="toggleDropdown('human-list')">
+            <span class="ss-ico" id="human-ico">🚶</span>
+            <span class="ss-val" id="human-val">Standard — Adult</span>
+            <span class="ss-arrow">▾</span>
+          </div>
+          <button class="ss-search-btn" onclick="toggleDropdown('human-list');focusSearch('human-search')">🔍</button>
+        </div>
+        <div class="ss-dropdown" id="human-list" style="display:none">
+          <div class="ss-search-wrap">
+            <input class="ss-search" id="human-search" placeholder="Search profile…" oninput="filterList(this,'human-list')"/>
+          </div>
+          <div class="ss-options">
+            <div class="ss-opt sel" data-val="adult"    data-ico="🚶" data-mult="0.40" onclick="selectHuman(this)"><span class="sso-ico">🚶</span><div><div class="sso-name">Standard — Adult</div><div class="sso-sub">Full mobility, average fitness</div></div></div>
+            <div class="ss-opt" data-val="child"        data-ico="👧" data-mult="0.30" onclick="selectHuman(this)"><span class="sso-ico">👧</span><div><div class="sso-name">Child (under 12)</div><div class="sso-sub">Lower height, stricter limits</div></div></div>
+            <div class="ss-opt" data-val="teen"         data-ico="🧑" data-mult="0.36" onclick="selectHuman(this)"><span class="sso-ico">🧑</span><div><div class="sso-name">Teenager (12–17)</div><div class="sso-sub">Slightly reduced limits</div></div></div>
+            <div class="ss-opt" data-val="elderly"      data-ico="🧓" data-mult="0.32" onclick="selectHuman(this)"><span class="sso-ico">🧓</span><div><div class="sso-name">Elderly / Senior</div><div class="sso-sub">Extra caution, reduced stability</div></div></div>
+            <div class="ss-opt" data-val="pregnant"     data-ico="🤰" data-mult="0.28" onclick="selectHuman(this)"><span class="sso-ico">🤰</span><div><div class="sso-name">Pregnant</div><div class="sso-sub">Conservative limits for safety</div></div></div>
+            <div class="ss-opt" data-val="disability"   data-ico="♿" data-mult="0.18" onclick="selectHuman(this)"><span class="sso-ico">♿</span><div><div class="sso-name">Wheelchair / Mobility Aid</div><div class="sso-sub">Strict — avoid any flooding</div></div></div>
+            <div class="ss-opt" data-val="withchild"    data-ico="👨‍👧" data-mult="0.28" onclick="selectHuman(this)"><span class="sso-ico">👨‍👧</span><div><div class="sso-name">Carrying / With Young Child</div><div class="sso-sub">Limits based on child's height</div></div></div>
+            <div class="ss-opt" data-val="athlete"      data-ico="🏃" data-mult="0.48" onclick="selectHuman(this)"><span class="sso-ico">🏃</span><div><div class="sso-name">Athlete / Strong swimmer</div><div class="sso-sub">Higher tolerance — still be cautious</div></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Height slider -->
+      <div class="detail-row" style="margin-top:12px">
+        <div class="detail-row-lbl">Your height in centimetres</div>
+        <div class="detail-row-val"><span id="height-val">170</span> cm</div>
+        <input class="sg-range" type="range" id="height-range" min="90" max="220" value="170" step="1"
+          oninput="updateHeightCalc()"/>
+        <div class="range-marks"><span>90 cm</span><span>155 cm</span><span>220 cm</span></div>
+      </div>
+      <!-- Breakdown -->
+      <div id="height-breakdown" style="background:var(--sg-surface2);border-radius:12px;padding:14px;margin-top:4px">
+        <div style="font-size:12px;font-weight:600;color:var(--sg-text);margin-bottom:10px">Your personal flood safety limits</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+            <span style="color:var(--sg-ok)">✓ Safe wading</span>
+            <span id="h-safe" style="color:var(--sg-ok);font-weight:700">up to 43 cm</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+            <span style="color:var(--sg-warn)">⚠️ Caution zone</span>
+            <span id="h-caution" style="color:var(--sg-warn);font-weight:700">43–68 cm</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+            <span style="color:var(--sg-danger)">🚨 Dangerous</span>
+            <span id="h-danger" style="color:var(--sg-danger);font-weight:700">above 68 cm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /setup-scroll -->
+
+  <div class="setup-footer">
+    <button class="btn-p" id="usage-next-btn" onclick="goUsageNext()" disabled style="opacity:0.5">Continue →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SETUP STEP 2 — Notification Preferences
+══════════════════════════════════════════════ -->
+<div class="screen setup-screen" id="screen-setup-notifs">
+  <div class="setup-hero">
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px">
+      <div class="setup-step-dot done" style="width:14px"></div>
+      <div class="setup-step-dot active" style="width:28px"></div>
+      <div class="setup-step-dot" style="width:14px"></div>
+    </div>
+    <div class="setup-ico">🔔</div>
+    <div class="setup-title">Alert Preferences</div>
+    <div class="setup-sub">Choose how StormGuard warns you about flood danger</div>
+  </div>
+  <div class="setup-scroll">
+    <div class="detail-section">
+      <div class="detail-sec-title">Alert Radius</div>
+      <div class="detail-row">
+        <div class="detail-row-lbl">Alert me when floods are within this distance</div>
+        <div class="detail-row-val"><span id="radius-val">5</span> km</div>
+        <input class="sg-range" type="range" id="radius-range" min="1" max="20" value="5" step="1"
+          oninput="updateRange('radius-range','radius-val',null,' km')"/>
+        <div class="range-marks"><span>1 km</span><span>10 km</span><span>20 km</span></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-sec-title">Notification Types</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="detail-row" style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+          <span style="font-size:20px">🚨</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--sg-text)">Critical flood alerts</div><div style="font-size:12px;color:var(--sg-muted);margin-top:2px">Immediate danger — always on</div></div>
+          <div class="toggle on" style="pointer-events:none"></div>
+        </div>
+        <div class="detail-row" style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+          <span style="font-size:20px">⚡</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--sg-text)">Route safety warnings</div><div style="font-size:12px;color:var(--sg-muted);margin-top:2px">Alert when your usual route floods</div></div>
+          <div class="toggle on" id="pref-route" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
+        </div>
+        <div class="detail-row" style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+          <span style="font-size:20px">🌦️</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--sg-text)">Weather flood forecast</div><div style="font-size:12px;color:var(--sg-muted);margin-top:2px">Daily morning flood risk summary</div></div>
+          <div class="toggle on" id="pref-weather" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
+        </div>
+        <div class="detail-row" style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+          <span style="font-size:20px">👥</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--sg-text)">Community reports nearby</div><div style="font-size:12px;color:var(--sg-muted);margin-top:2px">When others report floods near you</div></div>
+          <div class="toggle off" id="pref-community" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="setup-footer">
+    <button class="btn-p" onclick="goSetupDone()">Finish Setup →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SETUP STEP 3 — All done summary
+══════════════════════════════════════════════ -->
+<div class="screen setup-screen" id="screen-setup-done" style="align-items:center;justify-content:center;padding:32px">
+  <div style="text-align:center;margin-bottom:28px">
+    <div style="font-size:64px;margin-bottom:16px">🛡️</div>
+    <div style="font-size:24px;font-weight:700;color:var(--sg-text);margin-bottom:8px">You're all set!</div>
+    <div style="font-size:14px;color:var(--sg-muted);line-height:1.6;max-width:280px;margin:0 auto">StormGuard is now configured for your personal flood safety profile</div>
+  </div>
+  <div class="profile-summary" style="width:100%">
+    <div class="ps-row"><span class="ps-ico">👤</span><div><div class="ps-lbl">Name</div><div class="ps-val" id="done-name">Adebayo Johnson</div></div></div>
+    <div class="ps-row"><span class="ps-ico">🌍</span><div><div class="ps-lbl">Country</div><div class="ps-val" id="done-country">Nigeria</div></div></div>
+    <div class="ps-row"><span class="ps-ico" id="done-mode-ico">🚗</span><div><div class="ps-lbl">Mode of travel</div><div class="ps-val" id="done-mode">Vehicle — SUV / 4x4</div></div></div>
+    <div class="ps-row"><span class="ps-ico">🌊</span><div><div class="ps-lbl">Personal flood limit</div><div class="ps-val" id="done-limit">Alert above 57 cm</div></div></div>
+    <div class="ps-row"><span class="ps-ico">📍</span><div><div class="ps-lbl">Alert radius</div><div class="ps-val" id="done-radius">5 km</div></div></div>
+  </div>
+  <button class="btn-p" style="width:100%;margin-top:8px" onclick="finishOnboarding()">Go to StormGuard →</button>
+</div>
+
+</div><!-- /phone-shell -->
+
+<script>
+// ── State ──────────────────────────────────────
+let currentScreen = 'splash';
+let prevScreen    = 'splash';
+let sosTimer      = null;
+let sosCount      = 5;
+let navStep       = 0;
+
+const NAV_STEPS = [
+  {ico:'↑', txt:'Head north on Ozumba Mbadiwe Ave', dist:'0.4 km'},
+  {ico:'↱', txt:'Turn right — Ligali Ayorinde St',  dist:'1.2 km'},
+  {ico:'⚠️',txt:'Avoid Third Mainland Bridge',      dist:'FLOODED'},
+  {ico:'↰', txt:'Turn left — Lekki-Epe Expressway', dist:'5.8 km'},
+  {ico:'🏁', txt:'Arrive — Victoria Island',         dist:'28 km'},
+];
+
+const MAIN_SCREENS = ['home','weather','nav','sos','map','alerts','vehicle','profile'];
+
+// ── Auth State ─────────────────────────────────
+let authUser = null; // { name, email } when logged in
+
+// Mock registered users (localStorage-backed)
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('sg_users') || '[]'); } catch(e) { return []; }
+}
+function saveUser(u) {
+  const users = getUsers();
+  users.push(u);
+  localStorage.setItem('sg_users', JSON.stringify(users));
+}
+function findUser(email) {
+  return getUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+}
+function saveSession(user) {
+  authUser = user;
+  localStorage.setItem('sg_session', JSON.stringify(user));
+}
+function loadSession() {
+  try {
+    const s = localStorage.getItem('sg_session');
+    if (s) { authUser = JSON.parse(s); return true; }
+  } catch(e) {}
+  return false;
+}
+function clearSession() {
+  authUser = null;
+  localStorage.removeItem('sg_session');
+}
+
+// ── Login ──────────────────────────────────────
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const errEl = document.getElementById('login-error');
+  const okEl  = document.getElementById('login-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!email || !pwd) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.classList.add('loading'); btn.textContent = 'Signing in…';
+
+  setTimeout(() => {
+    btn.classList.remove('loading'); btn.textContent = 'Sign In';
+    const user = findUser(email);
+    if (!user || user.pwd !== pwd) {
+      errEl.textContent = 'Incorrect email or password. Please try again.';
+      errEl.style.display = 'block'; return;
+    }
+    okEl.style.display = 'block';
+    saveSession(user);
+    updateProfileScreen();
+    setTimeout(() => { okEl.style.display='none'; go('home'); }, 900);
+  }, 1200);
+}
+
+// ── Sign Up ────────────────────────────────────
+let termsAccepted = false;
+function toggleTerms() {
+  termsAccepted = !termsAccepted;
+  document.getElementById('terms-check').classList.toggle('checked', termsAccepted);
+}
+
+function doSignup() {
+  const name  = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pwd   = document.getElementById('su-pwd').value;
+  const pwd2  = document.getElementById('su-pwd2').value;
+  const errEl = document.getElementById('signup-error');
+  const okEl  = document.getElementById('signup-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  const countrySelectEl = document.getElementById('su-country');
+  const country = countrySelectEl ? countrySelectEl.value : '';
+  if (!name)              { showErr('signup-error','Please enter your full name.'); return; }
+  if (!country)           { showErr('signup-error','Please select your country.'); return; }
+  if (!email || !email.includes('@')) { showErr('signup-error','Please enter a valid email.'); return; }
+  if (pwd.length < 8)     { showErr('signup-error','Password must be at least 8 characters.'); return; }
+  if (pwd !== pwd2)       { showErr('signup-error','Passwords do not match.'); return; }
+  if (!termsAccepted)     { showErr('signup-error','Please accept the Terms of Service.'); return; }
+  if (findUser(email))    { showErr('signup-error','An account with this email already exists.'); return; }
+
+  const btn = document.getElementById('signup-btn');
+  btn.classList.add('loading'); btn.textContent = 'Creating account…';
+
+  setTimeout(() => {
+    btn.classList.remove('loading'); btn.textContent = 'Create Account';
+    const user = { name, email, pwd, country, joined: new Date().toLocaleDateString('en-GB', {month:'short', year:'numeric'}) };
+    saveUser(user);
+    saveSession(user);
+    okEl.style.display = 'block';
+    updateProfileScreen();
+    setTimeout(() => { okEl.style.display='none'; go('setup-usage'); }, 900);
+  }, 1400);
+}
+
+// ── Forgot Password ────────────────────────────
+function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const okEl  = document.getElementById('forgot-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!email) { showErr('forgot-error','Please enter your email address.'); return; }
+
+  const btn = document.getElementById('forgot-btn');
+  btn.classList.add('loading'); btn.textContent = 'Sending…';
+
+  setTimeout(() => {
+    btn.classList.remove('loading'); btn.textContent = 'Send Reset Link';
+    if (!findUser(email)) { showErr('forgot-error','No account found with that email.'); return; }
+    okEl.style.display = 'block';
+  }, 1200);
+}
+
+// ── Social login (mock) ────────────────────────
+function socialLogin(provider) {
+  const btn = event.currentTarget;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Connecting…'; btn.disabled = true;
+  setTimeout(() => {
+    btn.innerHTML = orig; btn.disabled = false;
+    const user = { name: 'Demo User', email: 'demo@stormguard.app', pwd: '', joined: 'Mar 2026' };
+    if (!findUser(user.email)) saveUser(user);
+    saveSession(user);
+    updateProfileScreen();
+    const dest = (user.setup) ? 'home' : 'setup-usage';
+    go(dest);
+  }, 1500);
+}
+
+// ── Password strength ──────────────────────────
+function checkPwdStrength(val) {
+  const bar  = document.getElementById('pwd-bar');
+  const hint = document.getElementById('pwd-hint');
+  const score = [val.length >= 8, /[0-9]/.test(val), /[^a-zA-Z0-9]/.test(val), /[A-Z]/.test(val)].filter(Boolean).length;
+  const cfg = [
+    {w:'0%',  bg:'transparent', txt:'Use 8+ characters with numbers and symbols'},
+    {w:'25%', bg:'var(--sg-danger)', txt:'Too weak — add numbers and symbols'},
+    {w:'50%', bg:'var(--sg-warn)',   txt:'Fair — add uppercase letters'},
+    {w:'75%', bg:'#ffd60a',          txt:'Good — add a special character'},
+    {w:'100%',bg:'var(--sg-ok)',     txt:'Strong password ✓'},
+  ][score];
+  bar.style.width = cfg.w; bar.style.background = cfg.bg; hint.textContent = cfg.txt;
+}
+
+// ── Toggle password visibility ─────────────────
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁️';
+}
+
+// ── Helpers ────────────────────────────────────
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function updateProfileScreen() {
+  if (!authUser) return;
+  const nameEl = document.querySelector('#screen-profile .p-name');
+  const subEl  = document.querySelector('#screen-profile .p-sub');
+  if (nameEl) nameEl.textContent = authUser.name;
+  if (subEl)  subEl.textContent  = 'Lagos, Nigeria · Joined ' + (authUser.joined || 'Mar 2026');
+}
+
+// ── Sign out (wired to profile) ────────────────
+function signOut() {
+  clearSession();
+  authUser = null;
+  // reset login form
+  const em = document.getElementById('login-email');
+  const pw = document.getElementById('login-pwd');
+  if (em) em.value = ''; if (pw) pw.value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-ok').style.display    = 'none';
+  go('login');
+}
+
+
+// ── Navigation ─────────────────────────────────
+function go(id) {
+  document.getElementById('screen-' + currentScreen)?.classList.remove('active');
+  prevScreen    = currentScreen;
+  currentScreen = id;
+  const next = document.getElementById('screen-' + id);
+  if (next) next.classList.add('active');
+  const bnav = document.getElementById('bnav');
+  bnav.style.display = MAIN_SCREENS.includes(id) ? 'flex' : 'none';
+  // highlight active nav tab
+  ['home','weather','nav','sos','profile'].forEach(t => {
+    const el = document.getElementById('nb-' + t);
+    if (el) el.classList.toggle('active', id === t);
+  });
+  // side effects
+  if (id === 'weather') spawnRain();
+  if (id === 'setup-usage') {
+    // default to vehicle tab, init list
+    setTimeout(function() {
+      switchMode('vehicle');
+    }, 50);
+  }
+  if (id === 'nav') { document.getElementById('nav-plan-view').style.display='block'; document.getElementById('nav-active-view').style.display='none'; }
+  window.scrollTo(0,0);
+}
+
+function goBack() { go(prevScreen === currentScreen ? 'home' : prevScreen); }
+
+// ── Onboarding ─────────────────────────────────
+function selProf(type) {
+  ['driver','moto','cycle','walk'].forEach(t => document.getElementById('pc-'+t).classList.remove('sel'));
+  document.getElementById('pc-'+type).classList.add('sel');
+}
+
+// ── Weather rain animation ──────────────────────
+function spawnRain() {
+  const c = document.getElementById('rain-container');
+  if (!c || c.children.length > 0) return;
+  for (let i = 0; i < 26; i++) {
+    const d = document.createElement('div');
+    d.className = 'rdrop';
+    const h = Math.random()*120+40;
+    d.style.cssText = `left:${Math.random()*100}%;height:${h}px;animation-duration:${(Math.random()*0.8+0.5).toFixed(2)}s;animation-delay:${(Math.random()*2).toFixed(2)}s;top:-${h}px`;
+    c.appendChild(d);
+  }
+}
+
+// ── Navigation ─────────────────────────────────
+function selRoute(idx, btn) {
+  document.querySelectorAll('.r-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const data = [
+    {dist:'28 km',eta:'42 min',haz:'2'},
+    {dist:'18 km',eta:'25 min',haz:'4'},
+    {dist:'22 km',eta:'AVOID', haz:'8'},
+  ];
+  const d = data[idx];
+  document.getElementById('r-dist').textContent = d.dist;
+  document.getElementById('r-eta').textContent  = d.eta;
+  document.getElementById('r-haz').textContent  = d.haz;
+  document.getElementById('r-eta').style.color  = idx===2 ? 'var(--sg-danger)' : 'var(--sg-ok)';
+}
+
+function startNav() {
+  const dest = document.getElementById('dest-in').value.trim();
+  if (!dest) return;
+  document.getElementById('nav-plan-view').style.display = 'none';
+  document.getElementById('nav-active-view').style.display = 'block';
+  navStep = 0;
+  updateNavStep();
+}
+
+function nextStep() {
+  if (navStep < NAV_STEPS.length - 1) { navStep++; updateNavStep(); }
+  else { endNav(); }
+}
+
+function updateNavStep() {
+  const s = NAV_STEPS[navStep];
+  document.getElementById('nav-inst-ico').textContent  = s.ico;
+  document.getElementById('nav-inst-txt').textContent  = s.txt;
+  document.getElementById('nav-inst-dist').textContent = navStep < NAV_STEPS.length-1 ? 'In ' + s.dist : 'Arrived!';
+}
+
+function endNav() {
+  document.getElementById('nav-plan-view').style.display  = 'block';
+  document.getElementById('nav-active-view').style.display = 'none';
+}
+
+// ── SOS ────────────────────────────────────────
+function activateSOS() {
+  const ov = document.getElementById('sos-overlay');
+  ov.classList.add('show');
+  sosCount = 5;
+  document.getElementById('sos-count').textContent = sosCount;
+  document.getElementById('sos-title').textContent = 'Sending SOS Alert…';
+  document.getElementById('sos-sub').textContent   = 'Notifying emergency services & your contacts with your GPS location';
+  sosTimer = setInterval(() => {
+    sosCount--;
+    const el = document.getElementById('sos-count');
+    if (el) el.textContent = sosCount;
+    if (sosCount <= 0) {
+      clearInterval(sosTimer);
+      document.getElementById('sos-count').textContent = '✓';
+      document.getElementById('sos-title').textContent = 'SOS Sent!';
+      document.getElementById('sos-sub').textContent   = 'Emergency services have been notified. Help is on the way.';
+    }
+  }, 1000);
+}
+
+function cancelSOS() {
+  if (sosTimer) clearInterval(sosTimer);
+  document.getElementById('sos-overlay').classList.remove('show');
+  sosCount = 5;
+}
+
+// ── Alerts filter ──────────────────────────────
+function filterAlerts(sev, btn) {
+  document.querySelectorAll('.fp').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.a-card').forEach(c => {
+    c.style.display = (sev === 'all' || c.dataset.sev === sev) ? 'block' : 'none';
+  });
+}
+
+// ── Vehicle gauge ──────────────────────────────
+function selVeh(type, safe, btn) {
+  document.querySelectorAll('.veh-card').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const cur = 52;
+  const pct = Math.min(100, Math.round((cur/safe)*100));
+  const fill = document.getElementById('gauge-fill');
+  const verd = document.getElementById('gauge-verd');
+  const title = document.getElementById('gauge-title');
+  const names = {suv:'SUV / 4x4', sedan:'Sedan', moto:'Motorcycle', truck:'Truck / Bus'};
+  title.innerHTML = 'Risk for <strong>' + names[type] + '</strong>';
+  fill.style.width = pct + '%';
+  if (pct > 80) { fill.style.background = 'var(--sg-danger)'; verd.style.color = 'var(--sg-danger)'; verd.textContent = '⚠️ HIGH RISK — Avoid all flood areas'; }
+  else if (pct > 50) { fill.style.background = 'var(--sg-warn)'; verd.style.color = 'var(--sg-warn)'; verd.textContent = 'Proceed with caution — current depth near limit'; }
+  else { fill.style.background = 'var(--sg-ok)'; verd.style.color = 'var(--sg-ok)'; verd.textContent = '✓ Conditions acceptable for your vehicle'; }
+}
+
+// ── Report ─────────────────────────────────────
+function submitReport() {
+  const loc = document.getElementById('rep-loc').value.trim();
+  if (!loc) { alert('Please enter a location'); return; }
+  document.getElementById('report-form').style.display = 'none';
+  const suc = document.getElementById('report-success');
+  suc.style.display = 'flex';
+  setTimeout(() => { suc.style.display = 'none'; document.getElementById('report-form').style.display = 'block'; document.getElementById('rep-loc').value = ''; go('home'); }, 2500);
+}
+
+
+// ══════════════════════════════════════════════
+// SETUP FLOW — STATE
+// ══════════════════════════════════════════════
+let setupData = {
+  usageType: null,
+  vehicleModel: 'suv', vehicleModelLabel: 'SUV / 4x4', vehicleLimit: 60,
+  motoModel: 'scooter', motoModelLabel: 'Scooter', motoLimit: 17,
+  humanProfile: 'adult', humanProfileLabel: 'Standard — Adult', humanMult: 0.40,
+  clearance: 19, exhaustHeight: 17, heightCm: 170,
+  alertRadius: 5, floodLimit: 57, floodLimitLabel: 'Alert above 57 cm'
+};
+
+// ── Mode tab switcher ──────────────────────────
+function switchMode(mode) {
+  ['vehicle','motorcycle','human'].forEach(m => {
+    const tab   = document.getElementById('mt-' + m);
+    const panel = document.getElementById('mode-panel-' + m);
+    if (tab)   tab.classList.toggle('active', m === mode);
+    if (panel) panel.style.display = (m === mode) ? 'block' : 'none';
+  });
+  setupData.usageType = mode;
+  const btn = document.getElementById('usage-next-btn');
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  closeAllDropdowns();
+}
+
+// ── Dropdown open/close ────────────────────────
+function toggleDropdown(listId) {
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const isOpen = list.style.display !== 'none';
+  closeAllDropdowns();
+  if (!isOpen) {
+    list.style.display = 'block';
+    // rotate arrow
+    const wrapId = listId.replace('-list', '-display');
+    const arrow  = document.querySelector('#' + wrapId + ' .ss-arrow');
+    if (arrow) arrow.classList.add('open');
+  }
+}
+
+function closeAllDropdowns() {
+  ['veh-list','moto-list','human-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.querySelectorAll('.ss-arrow').forEach(a => a.classList.remove('open'));
+}
+
+function focusSearch(searchId) {
+  setTimeout(() => {
+    const el = document.getElementById(searchId);
+    if (el) el.focus();
+  }, 60);
+}
+
+// Click outside closes dropdowns
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-select-wrap')) closeAllDropdowns();
+});
+
+// ── Filter / search ────────────────────────────
+function filterList(inputEl, listId) {
+  const q    = inputEl.value.toLowerCase().trim();
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const opts = list.querySelectorAll('.ss-opt');
+  let visible = 0;
+  opts.forEach(opt => {
+    const text = opt.textContent.toLowerCase();
+    const show = !q || text.includes(q);
+    opt.classList.toggle('hidden', !show);
+    if (show) visible++;
+  });
+  let noResult = list.querySelector('.ss-no-result');
+  if (!noResult) {
+    noResult = document.createElement('div');
+    noResult.className = 'ss-no-result';
+    noResult.textContent = 'No results found';
+    list.querySelector('.ss-options').appendChild(noResult);
+  }
+  noResult.style.display = visible === 0 ? 'block' : 'none';
+}
+
+// ── Vehicle selection ──────────────────────────
+function selectVehicle(optEl) {
+  const val   = optEl.dataset.val;
+  const ico   = optEl.dataset.ico;
+  const lim   = parseInt(optEl.dataset.lim) || 60;
+  const name  = optEl.querySelector('.sso-name').textContent;
+
+  // highlight selection
+  document.querySelectorAll('#veh-list .ss-opt').forEach(o => o.classList.remove('sel'));
+  optEl.classList.add('sel');
+
+  // update display
+  const dispIco = document.getElementById('veh-ico');
+  const dispVal = document.getElementById('veh-val');
+  if (dispIco) dispIco.textContent = ico;
+  if (dispVal) dispVal.textContent = name;
+
+  // update state
+  setupData.vehicleModel = val;
+  setupData.vehicleModelLabel = name;
+  setupData.vehicleLimit = lim;
+
+  // set clearance slider to matched value
+  const cl = Math.round(lim / 3);
+  const rangeEl = document.getElementById('clearance-range');
+  if (rangeEl) { rangeEl.value = cl; updateRange('clearance-range','clearance-val',null,' cm'); }
+  setupData.clearance = cl;
+  updateFloodLimitCalc();
+  closeAllDropdowns();
+}
+
+// ── Motorcycle selection ───────────────────────
+function selectMoto(optEl) {
+  const val  = optEl.dataset.val;
+  const ico  = optEl.dataset.ico;
+  const lim  = parseInt(optEl.dataset.lim) || 17;
+  const name = optEl.querySelector('.sso-name').textContent;
+
+  document.querySelectorAll('#moto-list .ss-opt').forEach(o => o.classList.remove('sel'));
+  optEl.classList.add('sel');
+
+  const dispIco = document.getElementById('moto-ico');
+  const dispVal = document.getElementById('moto-val');
+  if (dispIco) dispIco.textContent = ico;
+  if (dispVal) dispVal.textContent = name;
+
+  setupData.motoModel = val;
+  setupData.motoModelLabel = name;
+  setupData.motoLimit = lim;
+
+  const rangeEl = document.getElementById('exhaust-range');
+  if (rangeEl) { rangeEl.value = lim; updateRange('exhaust-range','exhaust-val',null,' cm'); }
+  setupData.exhaustHeight = lim;
+  updateExhaustCalc();
+  closeAllDropdowns();
+}
+
+// ── Human / pedestrian selection ───────────────
+function selectHuman(optEl) {
+  const val  = optEl.dataset.val;
+  const ico  = optEl.dataset.ico;
+  const mult = parseFloat(optEl.dataset.mult) || 0.40;
+  const name = optEl.querySelector('.sso-name').textContent;
+
+  document.querySelectorAll('#human-list .ss-opt').forEach(o => o.classList.remove('sel'));
+  optEl.classList.add('sel');
+
+  const dispIco = document.getElementById('human-ico');
+  const dispVal = document.getElementById('human-val');
+  if (dispIco) dispIco.textContent = ico;
+  if (dispVal) dispVal.textContent = name;
+
+  setupData.humanProfile = val;
+  setupData.humanProfileLabel = name;
+  setupData.humanMult = mult;
+  updateHeightCalc();
+  closeAllDropdowns();
+}
+
+// ── Range slider update ────────────────────────
+function updateRange(rangeId, valId, fillId, suffix) {
+  const range = document.getElementById(rangeId);
+  const valEl = document.getElementById(valId);
+  if (!range || !valEl) return;
+  const v   = parseInt(range.value);
+  valEl.textContent = v;
+  const pct = ((v - parseInt(range.min)) / (parseInt(range.max) - parseInt(range.min))) * 100;
+  range.style.background = 'linear-gradient(to right, var(--sg-blue) ' + pct + '%, var(--sg-surface2) ' + pct + '%)';
+  if (rangeId === 'clearance-range') { setupData.clearance = v; updateFloodLimitCalc(); }
+  if (rangeId === 'radius-range')    { setupData.alertRadius = v; }
+}
+
+function updateFloodLimitCalc() {
+  const limit = Math.round(setupData.clearance * 3);
+  setupData.floodLimit = limit;
+  setupData.floodLimitLabel = 'Alert above ' + limit + ' cm';
+  const el = document.getElementById('clearance-calc');
+  if (el) el.textContent = '~' + limit + ' cm';
+}
+
+function updateExhaustCalc() {
+  const range = document.getElementById('exhaust-range');
+  if (!range) return;
+  const v = parseInt(range.value);
+  setupData.exhaustHeight = v;
+  const safeLimit = Math.max(5, v - 3);
+  setupData.floodLimit = safeLimit;
+  setupData.floodLimitLabel = 'Alert above ' + safeLimit + ' cm';
+  const el = document.getElementById('exhaust-calc');
+  if (el) el.textContent = safeLimit + ' cm';
+  const valEl = document.getElementById('exhaust-val');
+  if (valEl) valEl.textContent = v;
+  const pct = ((v - parseInt(range.min)) / (parseInt(range.max) - parseInt(range.min))) * 100;
+  range.style.background = 'linear-gradient(to right, var(--sg-blue) ' + pct + '%, var(--sg-surface2) ' + pct + '%)';
+}
+
+function updateHeightCalc() {
+  const range = document.getElementById('height-range');
+  if (!range) return;
+  const h   = parseInt(range.value);
+  setupData.heightCm = h;
+  const pct = ((h - parseInt(range.min)) / (parseInt(range.max) - parseInt(range.min))) * 100;
+  range.style.background = 'linear-gradient(to right, var(--sg-blue) ' + pct + '%, var(--sg-surface2) ' + pct + '%)';
+  document.getElementById('height-val').textContent = h;
+  const mult    = setupData.humanMult || 0.40;
+  const safeMax = Math.round(h * mult);
+  const cautMax = Math.round(h * (mult + 0.15));
+  setupData.floodLimit = safeMax;
+  setupData.floodLimitLabel = 'Alert above ' + safeMax + ' cm';
+  const el_s = document.getElementById('h-safe');
+  const el_c = document.getElementById('h-caution');
+  const el_d = document.getElementById('h-danger');
+  if (el_s) el_s.textContent = 'up to ' + safeMax + ' cm';
+  if (el_c) el_c.textContent = safeMax + '–' + cautMax + ' cm';
+  if (el_d) el_d.textContent = 'above ' + cautMax + ' cm';
+}
+
+// ── Navigate setup flow ────────────────────────
+function goUsageNext() {
+  if (!setupData.usageType) return;
+  closeAllDropdowns();
+  go('setup-notifs');
+}
+
+function goSetupDone() {
+  const modeMap = {
+    vehicle:    { ico: '🚗', label: 'Vehicle — ' + setupData.vehicleModelLabel },
+    motorcycle: { ico: '🏍️', label: 'Motorcycle — ' + setupData.motoModelLabel },
+    human:      { ico: '🚶', label: 'On Foot — ' + setupData.humanProfileLabel + ' (' + setupData.heightCm + ' cm)' }
+  };
+  const mode    = modeMap[setupData.usageType] || { ico: '🚗', label: 'Vehicle' };
+  const name    = authUser ? authUser.name : (document.getElementById('su-name')?.value || 'User');
+  const countryEl = document.getElementById('su-country');
+  const country = (authUser && authUser.country) ? authUser.country : (countryEl ? countryEl.value || '—' : '—');
+
+  const dName   = document.getElementById('done-name');
+  const dCoun   = document.getElementById('done-country');
+  const dModeI  = document.getElementById('done-mode-ico');
+  const dMode   = document.getElementById('done-mode');
+  const dLimit  = document.getElementById('done-limit');
+  const dRadius = document.getElementById('done-radius');
+
+  if (dName)   dName.textContent   = name;
+  if (dCoun)   dCoun.textContent   = country;
+  if (dModeI)  dModeI.textContent  = mode.ico;
+  if (dMode)   dMode.textContent   = mode.label;
+  if (dLimit)  dLimit.textContent  = setupData.floodLimitLabel;
+  if (dRadius) dRadius.textContent = setupData.alertRadius + ' km';
+
+  if (authUser) {
+    authUser.setup   = setupData;
+    authUser.country = country;
+    saveSession(authUser);
+    updateProfileScreen();
+  }
+  go('setup-done');
+}
+
+function finishOnboarding() { go('home'); }
+
+// ── Old shim ───────────────────────────────────
+function pickUsage(type) { switchMode(type); }
+
+
+
+// ── Vehicle model ──────────────────────────────
+function pickVModel(id, label, limRange) {
+  ['sedan','suv','pickup','minivan','bus','compact'].forEach(v =>
+    document.getElementById('vm-' + v)?.classList.remove('sel'));
+  document.getElementById('vm-' + id).classList.add('sel');
+  setupData.vehicleModel = id; setupData.vehicleModelLabel = label;
+  updateFloodLimitCalc();
+}
+
+// ── Motorcycle model ───────────────────────────
+function pickMotoModel(id, label, limRange) {
+  ['scooter','standard','enduro','sportbike'].forEach(v =>
+    document.getElementById('vm-' + v)?.classList.remove('sel'));
+  document.getElementById('vm-' + id).classList.add('sel');
+  setupData.motoModel = id; setupData.motoModelLabel = label;
+  updateExhaustCalc();
+}
+
+// ── Mobility ───────────────────────────────────
+function pickMobility(id, label) {
+  ['able','child','elderly','disabled'].forEach(v => {
+    document.getElementById('mob-' + v)?.classList.remove('sel');
+    document.getElementById('vm-' + v)?.classList.remove('sel');
+  });
+  ['mob-','vm-'].forEach(prefix => document.getElementById(prefix + id)?.classList.add('sel'));
+  setupData.mobility = id;
+  updateHeightCalc();
+}
+
+// ── Range slider update ────────────────────────
+function updateRange(rangeId, valId, fillId, suffix) {
+  const range = document.getElementById(rangeId);
+  const valEl = document.getElementById(valId);
+  if (!range || !valEl) return;
+  const v = parseInt(range.value);
+  valEl.textContent = v;
+  // update gradient fill
+  const pct = ((v - range.min) / (range.max - range.min)) * 100;
+  range.style.background = 'linear-gradient(to right, var(--sg-blue) ' + pct + '%, var(--sg-surface2) ' + pct + '%)';
+  if (rangeId === 'clearance-range') { setupData.clearance = v; updateFloodLimitCalc(); }
+  if (rangeId === 'radius-range') { setupData.alertRadius = v; }
+}
+
+function updateFloodLimitCalc() {
+  if (setupData.usageType === 'vehicle') {
+    const limit = Math.round(setupData.clearance * 3);
+    setupData.floodLimit = limit;
+    setupData.floodLimitLabel = 'Alert above ' + limit + ' cm';
+    const el = document.getElementById('clearance-calc');
+    if (el) el.textContent = '~' + limit + ' cm';
+  }
+}
+
+function updateExhaustCalc() {
+  const range = document.getElementById('exhaust-range');
+  if (!range) return;
+  const v = parseInt(range.value);
+  setupData.exhaustHeight = v;
+  const safeLimit = Math.max(5, v - 3);
+  setupData.floodLimit = safeLimit;
+  setupData.floodLimitLabel = 'Alert above ' + safeLimit + ' cm';
+  const el = document.getElementById('exhaust-calc');
+  if (el) el.textContent = safeLimit + ' cm';
+  const valEl = document.getElementById('exhaust-val');
+  if (valEl) valEl.textContent = v;
+  const pct = ((v - range.min) / (range.max - range.min)) * 100;
+  range.style.background = 'linear-gradient(to right, var(--sg-blue) ' + pct + '%, var(--sg-surface2) ' + pct + '%)';
+}
+
+function updateHeightCalc() {
+  const range = document.getElementById('height-range');
+  if (!range) return;
+  const h = parseInt(range.value);
+  setupData.heightCm = h;
+  const pct = ((h - range.min) / (range.max - range.min)) * 100;
+  range.style.background = 'linear-gradient(to right, var(--sg-blue) ' + pct + '%, var(--sg-surface2) ' + pct + '%)';
+  document.getElementById('height-val').textContent = h;
+  // multipliers: mobility modifiers
+  const multMap = { able:0.40, adult:0.40, child:0.30, teen:0.36, elderly:0.32, pregnant:0.28, disability:0.18, withchild:0.28, athlete:0.48 };
+  const m = setupData.humanMult || multMap[setupData.mobility] || 0.40;
+  const safeMax  = Math.round(h * m);
+  const cautMax  = Math.round(h * (m + 0.15));
+  setupData.floodLimit = safeMax;
+  setupData.floodLimitLabel = 'Alert above ' + safeMax + ' cm';
+  const el_s = document.getElementById('h-safe');
+  const el_c = document.getElementById('h-caution');
+  const el_d = document.getElementById('h-danger');
+  if (el_s) el_s.textContent = 'up to ' + safeMax + ' cm';
+  if (el_c) el_c.textContent = safeMax + '–' + cautMax + ' cm';
+  if (el_d) el_d.textContent = 'above ' + cautMax + ' cm';
+}
+
+// ── Navigate setup flow ────────────────────────
+function goUsageNext() {
+  if (!setupData.usageType) return;
+  go('setup-notifs');
+}
+
+function goSetupDone() {
+  // Populate summary
+  const modeMap = {
+    vehicle:    { ico: '🚗', label: 'Vehicle — ' + setupData.vehicleModelLabel },
+    motorcycle: { ico: '🏍️', label: 'Motorcycle — ' + (setupData.motoModelLabel || 'Scooter') },
+    human:      { ico: '🚶', label: 'On Foot — ' + setupData.heightCm + ' cm tall' }
+  };
+  const mode = modeMap[setupData.usageType] || { ico: '🚗', label: 'Vehicle' };
+  const name = authUser ? authUser.name : (document.getElementById('su-name')?.value || 'User');
+  const countryEl = document.getElementById('su-country');
+  const country = (authUser && authUser.country) ? authUser.country : (countryEl ? countryEl.value || '—' : '—');
+
+  document.getElementById('done-name').textContent    = name;
+  document.getElementById('done-country').textContent = country;
+  document.getElementById('done-mode-ico').textContent = mode.ico;
+  document.getElementById('done-mode').textContent    = mode.label;
+  document.getElementById('done-limit').textContent   = setupData.floodLimitLabel;
+  document.getElementById('done-radius').textContent  = setupData.alertRadius + ' km';
+
+  // Save to session
+  if (authUser) {
+    authUser.setup = setupData;
+    authUser.country = country;
+    saveSession(authUser);
+    updateProfileScreen();
+  }
+  go('setup-done');
+}
+
+function finishOnboarding() {
+  go('home');
+}
+
+// ══════════════════════════════════════════════
+// SPLASH CINEMATIC ANIMATION ENGINE
+// ══════════════════════════════════════════════
+(function() {
+  let canvas, ctx, W, H, t = 0, scene = 0, sceneT = 0;
+  const SCENE_DURATION = 420; // frames per scene (~7s at 60fps)
+
+  // ── Shared particle pools ──────────────────
+  let raindrops = [], floodParticles = [], waveOffsets = [];
+
+  function initCanvas() {
+    canvas = document.getElementById('splash-canvas');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+    initRain();
+    initWaves();
+    requestAnimationFrame(loop);
+  }
+
+  function resize() {
+    if (!canvas) return;
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function initRain() {
+    raindrops = [];
+    for (let i = 0; i < 80; i++) {
+      raindrops.push({
+        x: Math.random() * 1200,
+        y: Math.random() * 900,
+        len: 12 + Math.random() * 22,
+        speed: 8 + Math.random() * 10,
+        alpha: 0.3 + Math.random() * 0.5,
+        wind: 2 + Math.random() * 3
+      });
+    }
+  }
+
+  function initWaves() {
+    waveOffsets = Array.from({length: 6}, (_, i) => ({
+      amp: 8 + i * 4,
+      freq: 0.012 - i * 0.001,
+      phase: i * 1.1,
+      speed: 0.03 + i * 0.01
+    }));
+  }
+
+  // ── Scene switcher ─────────────────────────
+  function checkScene() {
+    if (sceneT > SCENE_DURATION) {
+      scene = (scene + 1) % 2;
+      sceneT = 0;
+      // Update indicator dots
+      const d0 = document.getElementById('scene-dot-0');
+      const d1 = document.getElementById('scene-dot-1');
+      const lbl = document.getElementById('splash-scene-label');
+      if (scene === 0) {
+        if (d0) { d0.style.width='22px'; d0.style.background='#1a6bff'; }
+        if (d1) { d1.style.width='6px';  d1.style.background='rgba(255,255,255,0.25)'; }
+        if (lbl) lbl.textContent = 'Scene 1 of 2 — Stranded in Floodwater';
+      } else {
+        if (d0) { d0.style.width='6px';  d0.style.background='rgba(255,255,255,0.25)'; }
+        if (d1) { d1.style.width='22px'; d1.style.background='#1a6bff'; }
+        if (lbl) lbl.textContent = 'Scene 2 of 2 — Escaping the Tsunami';
+      }
+    }
+  }
+
+  // ── Main loop ──────────────────────────────
+  function loop() {
+    if (!canvas || !canvas.isConnected) return;
+    t++; sceneT++;
+    checkScene();
+    ctx.clearRect(0, 0, W, H);
+
+    if (scene === 0) drawScene1();
+    else             drawScene2();
+
+    requestAnimationFrame(loop);
+  }
+
+  // ══════════════════════════════════════════
+  // SCENE 1 — Stormy night, flooded road, person pushing car
+  // ══════════════════════════════════════════
+  function drawScene1() {
+    const fade = Math.min(1, sceneT / 40);
+    ctx.globalAlpha = fade;
+
+    // ── Sky gradient (dark stormy night) ──
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+    sky.addColorStop(0, '#04080f');
+    sky.addColorStop(0.5, '#07122a');
+    sky.addColorStop(1, '#0a1c3a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.55);
+
+    // ── Lightning flashes ──
+    if (t % 180 < 4 || (t % 180 > 8 && t % 180 < 11)) {
+      ctx.fillStyle = `rgba(200,220,255,${0.18 - (t%180 < 4 ? 0 : 0.05)})`;
+      ctx.fillRect(0, 0, W, H * 0.55);
+      // Bolt
+      if (t % 180 < 3) drawLightningBolt(W * 0.72, 0, W * 0.64, H * 0.35);
+    }
+
+    // ── Storm clouds ──
+    drawStormClouds(t);
+
+    // ── Moon (partially behind clouds) ──
+    drawMoon();
+
+    // ── Flooded road / ground ──
+    const floodY = H * 0.52;
+    drawFloodWater(floodY, H - floodY, '#0c2a5e', '#1a4a8c', 0.9);
+
+    // ── Road markings under water ──
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = '#fff';
+    for (let rx = -30; rx < W + 30; rx += 60) {
+      ctx.fillRect(rx + Math.sin(t*0.01)*3, floodY + 10, 30, 6);
+    }
+    ctx.restore();
+
+    // ── Buildings / city silhouette ──
+    drawCitySilhouette(floodY);
+
+    // ── Submerged car ──
+    const carX = W * 0.38;
+    const carBob = Math.sin(t * 0.04) * 2;
+    drawFloodedCar(carX, floodY - 18 + carBob, 100, 46);
+
+    // ── Person pushing car ──
+    const personX = carX + 95;
+    drawPushingPerson(personX, floodY - 2 + carBob, t);
+
+    // ── Rain ──
+    drawRain(0.55);
+
+    // ── Water splashes around person ──
+    drawSplashes(personX - 10, floodY + 4, t, 4);
+
+    // ── Ground water reflection ripples ──
+    drawRipples(floodY);
+
+    // ── Distant flood water flow lines ──
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.strokeStyle = '#4a9eff';
+    ctx.lineWidth = 1;
+    for (let fy = floodY + 8; fy < H * 0.72; fy += 14) {
+      ctx.beginPath();
+      for (let fx = 0; fx < W; fx += 4) {
+        const y = fy + Math.sin(fx * 0.05 + t * 0.06) * 3;
+        fx === 0 ? ctx.moveTo(fx, y) : ctx.lineTo(fx, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.globalAlpha = 1;
+  }
+
+  // ══════════════════════════════════════════
+  // SCENE 2 — Person running from tsunami
+  // ══════════════════════════════════════════
+  function drawScene2() {
+    const fade = Math.min(1, sceneT / 40);
+    ctx.globalAlpha = fade;
+
+    // ── Sky: dusk/orange-grey disaster sky ──
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+    sky.addColorStop(0,   '#1a0a04');
+    sky.addColorStop(0.3, '#2d1208');
+    sky.addColorStop(0.7, '#1a2a3e');
+    sky.addColorStop(1,   '#0d2040');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.5);
+
+    // ── Dark horizon dust/mist clouds ──
+    drawDisasterClouds(t);
+
+    // ── Distant city silhouette ──
+    drawCitySilhouette(H * 0.5);
+
+    // ── TSUNAMI WAVE ── (rises over time, loops)
+    const waveProg  = (sceneT % 300) / 300; // 0→1 loop
+    const waveX     = W + 60 - waveProg * (W + 200);
+    const waveH     = H * 0.52 + Math.sin(t * 0.02) * 6;
+    drawTsunamiWave(waveX, waveH, t);
+
+    // ── Ground / road ──
+    const gndY = H * 0.62;
+    const gnd = ctx.createLinearGradient(0, gndY, 0, H);
+    gnd.addColorStop(0, '#1a1208');
+    gnd.addColorStop(1, '#0d0d0d');
+    ctx.fillStyle = gnd;
+    ctx.fillRect(0, gndY, W, H - gndY);
+
+    // Cracked ground lines
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = '#5a4020';
+    ctx.lineWidth = 1;
+    for (let ci = 0; ci < 8; ci++) {
+      const cx = (ci / 7) * W;
+      ctx.beginPath();
+      ctx.moveTo(cx, gndY);
+      ctx.lineTo(cx + (Math.random() > 0.5 ? 20 : -20), gndY + 30);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Debris flying in wind ──
+    drawDebris(t);
+
+    // ── Person running (moves left, looping) ──
+    const runProgress = (sceneT % 260) / 260;
+    const runX = W * 0.75 - runProgress * W * 0.65;
+    drawRunningPerson(runX, gndY - 2, t);
+
+    // ── Water rushing on ground ahead of wave ──
+    const rushFront = waveX - 40;
+    if (rushFront < W) {
+      const rg = ctx.createLinearGradient(rushFront, 0, W, 0);
+      rg.addColorStop(0, 'rgba(10,60,140,0)');
+      rg.addColorStop(1, 'rgba(30,100,200,0.5)');
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.moveTo(rushFront, gndY);
+      ctx.lineTo(W + 10, gndY);
+      ctx.lineTo(W + 10, H);
+      ctx.lineTo(rushFront - 20, H);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // ── Spray / mist from wave ──
+    drawWaveSpray(waveX, waveH, t);
+
+    // ── Rain ──
+    drawRain(0.35);
+
+    ctx.globalAlpha = 1;
+  }
+
+  // ══════════════════════════════════════════
+  // DRAWING HELPERS
+  // ══════════════════════════════════════════
+
+  function drawLightningBolt(x1, y1, x2, y2) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200,230,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = '#aaddff';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    const mx = (x1+x2)/2 + 25, my = (y1+y2)/2;
+    ctx.lineTo(mx - 15, my);
+    ctx.lineTo(mx + 10, my + 20);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawStormClouds(t) {
+    const clouds = [
+      {x: 0.05, y: 0.04, rx: 90, ry: 30, layers: 4},
+      {x: 0.35, y: 0.02, rx: 100, ry: 36, layers: 5},
+      {x: 0.65, y: 0.05, rx: 85, ry: 28, layers: 4},
+      {x: 0.88, y: 0.03, rx: 70, ry: 24, layers: 3},
+    ];
+    clouds.forEach((c, ci) => {
+      const cx = c.x * W + Math.sin(t * 0.004 + ci) * 8;
+      const cy = c.y * H;
+      for (let l = 0; l < c.layers; l++) {
+        const grd = ctx.createRadialGradient(cx, cy + l*4, 4, cx, cy + l*4, c.rx - l*8);
+        grd.addColorStop(0, `rgba(20,30,55,${0.95 - l*0.12})`);
+        grd.addColorStop(1, 'rgba(10,15,30,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.ellipse(cx + l*12, cy + l*8, c.rx - l*10, c.ry - l*4, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+  }
+
+  function drawDisasterClouds(t) {
+    const clouds = [
+      {x:0.1,  y:0.06, rx:120, ry:40},
+      {x:0.45, y:0.02, rx:140, ry:48},
+      {x:0.8,  y:0.07, rx:110, ry:35},
+    ];
+    clouds.forEach((c, ci) => {
+      const cx = c.x * W + Math.sin(t * 0.005 + ci) * 10;
+      const cy = c.y * H;
+      for (let l = 0; l < 3; l++) {
+        const grd = ctx.createRadialGradient(cx, cy, 4, cx, cy, c.rx);
+        grd.addColorStop(0, `rgba(40,22,8,${0.9 - l*0.2})`);
+        grd.addColorStop(0.6, `rgba(20,14,6,${0.7 - l*0.15})`);
+        grd.addColorStop(1, 'rgba(10,8,4,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.ellipse(cx + l*15, cy + l*10, c.rx - l*14, c.ry - l*6, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+  }
+
+  function drawMoon() {
+    const mx = W * 0.82, my = H * 0.13;
+    const grd = ctx.createRadialGradient(mx, my, 2, mx, my, 18);
+    grd.addColorStop(0, 'rgba(230,235,200,0.9)');
+    grd.addColorStop(0.6, 'rgba(200,210,170,0.5)');
+    grd.addColorStop(1, 'rgba(160,180,130,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(mx, my, 18, 0, Math.PI*2);
+    ctx.fill();
+    // halo
+    const halo = ctx.createRadialGradient(mx, my, 16, mx, my, 36);
+    halo.addColorStop(0, 'rgba(200,215,160,0.1)');
+    halo.addColorStop(1, 'rgba(200,215,160,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(mx, my, 36, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawCitySilhouette(groundY) {
+    ctx.save();
+    ctx.fillStyle = '#070e1a';
+    const buildings = [
+      {x:0.01,w:0.06,h:0.14},{x:0.07,w:0.04,h:0.10},{x:0.12,w:0.05,h:0.18},
+      {x:0.18,w:0.03,h:0.08},{x:0.22,w:0.07,h:0.22},{x:0.30,w:0.04,h:0.12},
+      {x:0.35,w:0.03,h:0.16},{x:0.40,w:0.06,h:0.10},{x:0.47,w:0.04,h:0.20},
+      {x:0.52,w:0.05,h:0.13},{x:0.58,w:0.08,h:0.17},{x:0.67,w:0.03,h:0.09},
+      {x:0.71,w:0.05,h:0.14},{x:0.77,w:0.04,h:0.19},{x:0.82,w:0.07,h:0.11},
+      {x:0.90,w:0.05,h:0.15},{x:0.96,w:0.04,h:0.08},
+    ];
+    buildings.forEach(b => {
+      const bh = b.h * H;
+      const by = groundY - bh;
+      ctx.fillRect(b.x * W, by, b.w * W, bh + 2);
+      // tiny windows
+      ctx.fillStyle = 'rgba(255,220,100,0.07)';
+      for (let wy = by + 6; wy < groundY - 6; wy += 10) {
+        for (let wx = b.x * W + 4; wx < (b.x + b.w) * W - 6; wx += 8) {
+          if (Math.random() > 0.6) ctx.fillRect(wx, wy, 4, 4);
+        }
+      }
+      ctx.fillStyle = '#070e1a';
+    });
+    ctx.restore();
+  }
+
+  function drawFloodWater(y, h, c1, c2, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const grd = ctx.createLinearGradient(0, y, 0, y + h);
+    grd.addColorStop(0, c1);
+    grd.addColorStop(1, c2);
+    ctx.fillStyle = grd;
+    // animated wavy top edge
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let wx = 0; wx <= W; wx += 4) {
+      const wy = y + Math.sin(wx * 0.03 + t * 0.08) * 3 + Math.sin(wx * 0.07 + t * 0.05) * 1.5;
+      wx === 0 ? ctx.moveTo(wx, wy) : ctx.lineTo(wx, wy);
+    }
+    ctx.lineTo(W, y + h);
+    ctx.lineTo(0, y + h);
+    ctx.closePath();
+    ctx.fill();
+    // surface shimmer
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#7ac0ff';
+    for (let sx = 0; sx < W; sx += 22) {
+      const sy = y + 4 + Math.sin(sx * 0.04 + t * 0.1) * 3;
+      ctx.beginPath();
+      ctx.ellipse(sx + Math.sin(t*0.03+sx)*4, sy, 8, 2, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawFloodedCar(x, y, w, h) {
+    ctx.save();
+    // car body (sedan shape)
+    const tilt = Math.sin(t * 0.03) * 1.5;
+    ctx.translate(x + w/2, y + h/2);
+    ctx.rotate(tilt * Math.PI / 180);
+    ctx.translate(-(x + w/2), -(y + h/2));
+
+    // car body bottom
+    ctx.fillStyle = '#1a3060';
+    ctx.beginPath();
+    ctx.roundRect(x, y + h*0.38, w, h*0.6, 4);
+    ctx.fill();
+    // car roof cabin
+    ctx.fillStyle = '#16284e';
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.18, y + h*0.38);
+    ctx.lineTo(x + w*0.26, y + h*0.04);
+    ctx.lineTo(x + w*0.74, y + h*0.04);
+    ctx.lineTo(x + w*0.85, y + h*0.38);
+    ctx.closePath();
+    ctx.fill();
+    // windshield
+    ctx.fillStyle = 'rgba(100,180,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.28, y + h*0.36);
+    ctx.lineTo(x + w*0.32, y + h*0.08);
+    ctx.lineTo(x + w*0.57, y + h*0.08);
+    ctx.lineTo(x + w*0.60, y + h*0.36);
+    ctx.closePath();
+    ctx.fill();
+    // rear window
+    ctx.fillStyle = 'rgba(100,180,255,0.2)';
+    ctx.beginPath();
+    ctx.moveTo(x + w*0.62, y + h*0.36);
+    ctx.lineTo(x + w*0.65, y + h*0.08);
+    ctx.lineTo(x + w*0.73, y + h*0.08);
+    ctx.lineTo(x + w*0.80, y + h*0.36);
+    ctx.closePath();
+    ctx.fill();
+    // wheels (submerged - only tops visible)
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath(); ctx.arc(x + w*0.22, y + h*0.88, h*0.22, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w*0.78, y + h*0.88, h*0.22, 0, Math.PI*2); ctx.fill();
+    // hub caps
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.arc(x + w*0.22, y + h*0.88, h*0.10, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + w*0.78, y + h*0.88, h*0.10, 0, Math.PI*2); ctx.fill();
+    // headlight (one glowing)
+    const gl = ctx.createRadialGradient(x+4, y+h*0.55, 0, x+4, y+h*0.55, 14);
+    gl.addColorStop(0, 'rgba(255,240,180,0.6)');
+    gl.addColorStop(1, 'rgba(255,240,180,0)');
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.arc(x+4, y+h*0.55, 14, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPushingPerson(x, y, t) {
+    ctx.save();
+    const lean = -18 + Math.sin(t * 0.12) * 4; // lean forward pushing
+    ctx.translate(x, y);
+    ctx.rotate(lean * Math.PI / 180);
+
+    // body
+    ctx.fillStyle = '#e8b87c'; // skin
+    ctx.beginPath(); ctx.arc(0, -42, 7, 0, Math.PI*2); ctx.fill(); // head
+    // torso
+    ctx.fillStyle = '#c0392b'; // red shirt
+    ctx.beginPath();
+    ctx.moveTo(-7, -34);
+    ctx.lineTo(-8, -10);
+    ctx.lineTo(8, -10);
+    ctx.lineTo(7, -34);
+    ctx.closePath();
+    ctx.fill();
+    // arms (pushing)
+    ctx.strokeStyle = '#c0392b';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(7, -28);
+    ctx.lineTo(20 + Math.sin(t*0.12)*2, -18 + Math.cos(t*0.12)*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(7, -22);
+    ctx.lineTo(20 + Math.sin(t*0.12)*2, -12 + Math.cos(t*0.12)*2);
+    ctx.stroke();
+    // hands
+    ctx.fillStyle = '#e8b87c';
+    ctx.beginPath(); ctx.arc(20 + Math.sin(t*0.12)*2, -18 + Math.cos(t*0.12)*2, 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(20 + Math.sin(t*0.12)*2, -12 + Math.cos(t*0.12)*2, 4, 0, Math.PI*2); ctx.fill();
+    // legs (wading stride)
+    ctx.strokeStyle = '#1a3a6e';
+    ctx.lineWidth = 5;
+    const legSwing = Math.sin(t * 0.15) * 10;
+    ctx.beginPath(); ctx.moveTo(-2, -10); ctx.lineTo(-6 + legSwing, 10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-2, -10); ctx.lineTo( 4 - legSwing, 10); ctx.stroke();
+    // water level on person (shins submerged)
+    ctx.fillStyle = 'rgba(15,50,110,0.5)';
+    ctx.fillRect(-12, 4, 24, 8);
+
+    ctx.restore();
+  }
+
+  function drawRunningPerson(x, y, t) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    const run = t * 0.22;
+    const bob = Math.sin(run) * 3;
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(0, 4, 14, 4, 0, 0, Math.PI*2); ctx.fill();
+
+    // head
+    ctx.fillStyle = '#e8b87c';
+    ctx.beginPath(); ctx.arc(0, -50 + bob, 8, 0, Math.PI*2); ctx.fill();
+    // hair
+    ctx.fillStyle = '#1a0a00';
+    ctx.beginPath(); ctx.arc(0, -54 + bob, 7, Math.PI, Math.PI*2); ctx.fill();
+
+    // torso
+    ctx.fillStyle = '#2980b9'; // blue shirt
+    ctx.beginPath();
+    ctx.moveTo(-8, -40 + bob);
+    ctx.lineTo(-9, -14 + bob);
+    ctx.lineTo(9, -14 + bob);
+    ctx.lineTo(8, -40 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // running arms
+    const armF = Math.sin(run) * 22;
+    const armB = -armF;
+    ctx.strokeStyle = '#2980b9';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    // front arm
+    ctx.beginPath();
+    ctx.moveTo(-6, -36 + bob);
+    ctx.lineTo(-18 + armF * 0.4, -22 + bob + Math.abs(Math.sin(run))*4);
+    ctx.stroke();
+    // back arm
+    ctx.beginPath();
+    ctx.moveTo(6, -36 + bob);
+    ctx.lineTo(16 + armB * 0.3, -22 + bob);
+    ctx.stroke();
+
+    // hands
+    ctx.fillStyle = '#e8b87c';
+    ctx.beginPath(); ctx.arc(-18 + armF * 0.4, -22 + bob + Math.abs(Math.sin(run))*4, 3.5, 0, Math.PI*2); ctx.fill();
+
+    // legs (running stride)
+    const legA = Math.sin(run) * 28;
+    const legB = -legA;
+    ctx.strokeStyle = '#1a3a6e';
+    ctx.lineWidth = 5;
+    // front leg
+    ctx.beginPath();
+    ctx.moveTo(-2, -14 + bob);
+    ctx.quadraticCurveTo(-8 + legA*0.3, -4, -6 + legA*0.6, 6);
+    ctx.stroke();
+    // back leg
+    ctx.beginPath();
+    ctx.moveTo(-2, -14 + bob);
+    ctx.quadraticCurveTo(6 + legB*0.3, -4, 4 + legB*0.5, 2);
+    ctx.stroke();
+
+    // look-back head tilt (person glancing at wave)
+    ctx.save();
+    ctx.translate(0, -50 + bob);
+    ctx.rotate(0.3);
+    ctx.fillStyle = '#e8b87c';
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(3, -1, 3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a0a00';
+    ctx.beginPath(); ctx.arc(4, -1, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawTsunamiWave(waveX, baseY, t) {
+    ctx.save();
+
+    // Main wave mass
+    const waveGrd = ctx.createLinearGradient(waveX - 40, 0, waveX + 80, 0);
+    waveGrd.addColorStop(0, 'rgba(8,40,100,0)');
+    waveGrd.addColorStop(0.3, '#0a3060');
+    waveGrd.addColorStop(0.7, '#1050a0');
+    waveGrd.addColorStop(1, '#1a70d0');
+    ctx.fillStyle = waveGrd;
+
+    ctx.beginPath();
+    ctx.moveTo(waveX + 80, 0); // right edge top
+    // wave crest shape
+    ctx.bezierCurveTo(
+      waveX + 60, baseY * 0.3,
+      waveX + 10, baseY * 0.5,
+      waveX - 20, baseY * 0.7
+    );
+    // wave curl at top
+    ctx.bezierCurveTo(
+      waveX - 50, baseY * 0.85,
+      waveX - 30, baseY * 1.0,
+      waveX - 10, baseY * 0.95
+    );
+    // wave face
+    const steps = 30;
+    for (let i = 0; i <= steps; i++) {
+      const p = i / steps;
+      const wx = waveX - 10 + p * 50;
+      const wy = baseY * 0.95 + p * (H - baseY * 0.95) + Math.sin(p * Math.PI * 3 + t * 0.08) * 8;
+      ctx.lineTo(wx, wy);
+    }
+    ctx.lineTo(W + 20, H + 10);
+    ctx.lineTo(W + 20, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Wave foam/crest white
+    ctx.strokeStyle = 'rgba(200,230,255,0.7)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(waveX - 50, baseY * 0.85);
+    ctx.bezierCurveTo(
+      waveX - 20, baseY * 0.72,
+      waveX + 10, baseY * 0.6,
+      waveX + 50, baseY * 0.35
+    );
+    ctx.stroke();
+
+    // Foam streaks
+    ctx.strokeStyle = 'rgba(220,240,255,0.4)';
+    ctx.lineWidth = 2;
+    for (let fi = 0; fi < 5; fi++) {
+      const fo = fi * 14 - 30;
+      ctx.beginPath();
+      ctx.moveTo(waveX - 40 + fo, baseY * (0.88 + fi*0.015));
+      ctx.bezierCurveTo(
+        waveX + fo, baseY * (0.75 + fi*0.01),
+        waveX + 30 + fo, baseY * 0.55,
+        waveX + 55 + fo, baseY * 0.4
+      );
+      ctx.stroke();
+    }
+
+    // Inner darkness of wave
+    const inner = ctx.createRadialGradient(waveX + 20, baseY * 0.65, 10, waveX + 20, baseY * 0.65, 80);
+    inner.addColorStop(0, 'rgba(2,15,40,0.6)');
+    inner.addColorStop(1, 'rgba(2,15,40,0)');
+    ctx.fillStyle = inner;
+    ctx.beginPath();
+    ctx.ellipse(waveX + 20, baseY * 0.65, 70, 50, -0.3, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawWaveSpray(waveX, waveY, t) {
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    for (let i = 0; i < 20; i++) {
+      const spx = waveX - 60 + Math.sin(t*0.07 + i*0.8)*40 - i*3;
+      const spy = waveY * 0.7 + Math.cos(t*0.05 + i)*30 - i*5;
+      const r   = 2 + Math.random()*5;
+      ctx.fillStyle = `rgba(180,220,255,${0.2 + Math.random()*0.3})`;
+      ctx.beginPath(); ctx.arc(spx, spy, r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawDebris(t) {
+    const items = [
+      {x:0.8, y:0.42, size:8,  rot:t*0.04,  vx:-0.8},
+      {x:0.6, y:0.38, size:12, rot:-t*0.03, vx:-1.1},
+      {x:0.9, y:0.45, size:6,  rot:t*0.06,  vx:-0.6},
+      {x:0.5, y:0.35, size:9,  rot:t*0.02,  vx:-0.9},
+    ];
+    items.forEach(d => {
+      ctx.save();
+      const dx = ((d.x * W + (t * d.vx * 2)) % (W + 60)) - 30;
+      const dy = d.y * H + Math.sin(t*0.04 + d.x * 10)*8;
+      ctx.translate(dx, dy);
+      ctx.rotate(d.rot);
+      ctx.fillStyle = 'rgba(80,60,30,0.7)';
+      ctx.fillRect(-d.size/2, -d.size/4, d.size, d.size/2);
+      ctx.restore();
+    });
+  }
+
+  function drawRain(alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(160,200,255,0.55)';
+    ctx.lineWidth = 0.8;
+    raindrops.forEach(drop => {
+      drop.x -= drop.wind * 0.5;
+      drop.y += drop.speed;
+      if (drop.y > H + 20) { drop.y = -30; drop.x = Math.random() * (W + 100); }
+      if (drop.x < -10)    { drop.x = W + 10; }
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y);
+      ctx.lineTo(drop.x - drop.wind, drop.y + drop.len);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function drawSplashes(x, y, t, count) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(150,200,255,0.5)';
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI + Math.sin(t * 0.1 + i) * 0.5;
+      const r     = 4 + Math.sin(t * 0.15 + i * 0.7) * 3;
+      const sx    = x + Math.cos(angle) * (10 + i * 4);
+      const sy    = y - Math.abs(Math.sin(t * 0.15 + i)) * (8 + i * 3);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawRipples(y) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(100,180,255,0.12)';
+    ctx.lineWidth = 1;
+    [0.2, 0.45, 0.7, 0.88].forEach((rx, i) => {
+      const r = ((t * 0.8 + i * 25) % 40);
+      ctx.beginPath();
+      ctx.ellipse(rx * W, y + 6, r * 1.6, r * 0.5, 0, 0, Math.PI*2);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  // ── Start when splash is active ─────────────
+  function tryInit() {
+    const s = document.getElementById('screen-splash');
+    if (s && s.classList.contains('active')) { initCanvas(); }
+    else { setTimeout(tryInit, 100); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInit);
+  else tryInit();
+})();
+
+// ── Init ───────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Restore session if exists
+  if (loadSession()) {
+    updateProfileScreen();
+    go('home');
+  } else {
+    document.getElementById('bnav').style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>
